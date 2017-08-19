@@ -3,7 +3,7 @@ from scrapy.signals import spider_closed
 
 from .spiders.utils import Logger
 
- 
+  
 class BasePipeline(object):
 
     def __init__(self, settings):
