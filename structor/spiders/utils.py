@@ -25,11 +25,17 @@ from functools import wraps, reduce
 from pythonjsonlogger.jsonlogger import JsonFormatter
 from urllib.parse import urlparse, urlunparse, urlencode, urljoin
 
-from scrapy import Selector
+from scrapy import Selector, Item
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from scrapy.utils.misc import arg_to_iter
 from scrapy.loader.processors import Compose
+
+
+class TakeAll(object):
+
+    def __call__(self, values):
+        return values
 
 
 class TakeFirst(object):
@@ -62,8 +68,9 @@ class ItemCollector(object):
             for i in iterable:
                 count += 1
                 self.tuples.append(i)
-        self.nodes_num_per_level[self.depth] += count
-        self.rolldown()
+        if count:
+            self.nodes_num_per_level[self.depth] += count
+            self.rolldown()
 
     def rolldown(self):
         self.depth += 1
@@ -89,8 +96,11 @@ class ItemCollector(object):
         self.nodes_num_per_level[self.depth - 1] -= 1
         self.rollup()
 
-    def add(self, root):
-        self.tuples.append(root)
+    def add(self, node):
+        if self.depth % 2:
+            self.tuples.insert(0, node)
+        else:
+            self.tuples.append(node)
         self.nodes_num_per_level[self.depth] += 1
         self.rolldown()
 
@@ -102,7 +112,10 @@ class ItemCollector(object):
                     last_prop, last_item_loader, _ = self.last_node
                     prop, current_item_loader, kwargs = self.current_node
                     if last_item_loader is not current_item_loader:
-                        current_item_loader.add_value(last_prop, last_item_loader.load_item())
+                        try:
+                            current_item_loader.add_value(last_prop, last_item_loader.load_item())
+                        except KeyError:
+                            current_item_loader.add_value(prop, last_item_loader.load_item())
                 if not kwargs:
                     if self.check_deep_level_finished():
                         self.pop()
@@ -115,6 +128,8 @@ class ItemCollector(object):
                 return self.current_node
 
     def load(self, response):
+        # import pdb
+        # pdb.set_trace()
         while True:
             prop, current_item_loader, kwargs = self.dive()
             if not kwargs:
@@ -128,6 +143,8 @@ class ItemCollector(object):
                 meta.update(custom_meta)
                 kw = copy.deepcopy(kwargs)
                 kwargs.clear()
+                # import pdb
+                # pdb.set_trace()
                 return Request(meta=meta, callback="parse_next", errback="errback", **kw)
 
 
@@ -503,6 +520,14 @@ class P22P3Encoder(json.JSONEncoder):
            return obj.decode("utf-8")
         if isinstance(obj, (types.GeneratorType, map, filter)):
             return list(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+class ItemEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Item):
+            return dict(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 

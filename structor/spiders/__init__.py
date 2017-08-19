@@ -149,7 +149,7 @@ class StructureSpider(Spider):
         self.enrich_base_data(base_loader, response)
         meta["item_collector"].add((None, base_loader, None))
         self.enrich_data(base_loader, response)
-        self.yield_item_or_req(meta["item_collector"], response)
+        return self.yield_item_or_req(meta["item_collector"], response)
 
     def yield_item_or_req(self, item_collector, response):
         item_or_req = item_collector.load(response)
@@ -163,7 +163,7 @@ class StructureSpider(Spider):
         item_collector = response.request.meta["item_collector"]
         prop, item_loader, funcs = item_collector.get()
         getattr(self, "enrich_%s"%prop)(item_loader, response)
-        self.yield_item_or_req(item_collector, response)
+        return self.yield_item_or_req(item_collector, response)
 
     def errback(self, failure):
         if failure and failure.value and hasattr(failure.value, 'response'):

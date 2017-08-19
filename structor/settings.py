@@ -26,8 +26,10 @@ DEFAULT_REQUEST_HEADERS = {
     b'Accept-Encoding': b'deflate, gzip'
 }
 
+
+
 # 自带了一些user_agents，推荐不改
-USER_AGENT_LIST = pkgutil.get_data('crawling', 'user_agents.list')
+USER_AGENT_LIST = pkgutil.get_data('structor', 'user_agents.list')
 
 # 重试次数
 RETRY_TIMES = int(os.environ.get('RETRY_TIMES', 100))
@@ -53,26 +55,27 @@ SC_LOG_BACKUPS = int(os.environ.get('SC_LOG_BACKUPS', 5))
 
 # 有些网站可能需要提供一些自定义的请求头
 HEADERS = {
-    "ashford": {
-                "Cookie": "userPrefLanguage=en_US;",
+    "douban": {
+                "Cookie": """bid=dXX-6cUsf-Q; ll="108258"; __yadk_uid=x9PsglAbboUkZsFZ41INYsB4cCT1IaOW; ps=y; _pk_ref.100001.4cf6=%5B%22%22%2C%22%22%2C1503132764%2C%22https%3A%2F%2Fwww.douban.com%2F%22%5D; ap=1; _vwo_uuid_v2=20FC2F8188B6C4304DAB30DA9212E207|04a08eee6208ec3f95ac0fbc6fad0187; __utmt=1; dbcl2="165640820:ANsb2+OLOcY"; ck=pjDa; __utma=30149280.607863149.1502524855.1503130213.1503132764.9; __utmb=30149280.3.10.1503132764; __utmc=30149280; __utmz=30149280.1503048600.3.3.utmcsr=douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/; __utma=223695111.563536408.1502673977.1503130213.1503132764.8; __utmb=223695111.0.10.1503132764; __utmc=223695111; __utmz=223695111.1503048600.2.2.utmcsr=douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/; _pk_id.100001.4cf6=fddb5c9cbc574868.1502673978.8.1503140926.1503130723.; _pk_ses.100001.4cf6=*; push_noty_num=0; push_doumail_num=0""",
                 },
 }
 
-BOT_NAME = 'crawling'
+BOT_NAME = 'structor'
 
-SPIDER_MODULES = ['crawling.spiders']
+SPIDER_MODULES = ['structor.spiders']
 
-NEWSPIDER_MODULE = 'crawling.spiders'
+NEWSPIDER_MODULE = 'structor.spiders'
 
 # Enables scheduling storing requests queue in redis.
-SCHEDULER = "crawling.scheduler.Scheduler"
+SCHEDULER = "structor.scheduler.Scheduler"
 
 # 统计抓取信息
-STATS_CLASS = 'crawling.stats_collectors.StatsCollector'
+STATS_CLASS = 'structor.stats_collectors.StatsCollector'
 
 
 # Store scraped item in redis for post-processing.
 ITEM_PIPELINES = {
+    'structor.pipelines.MongoPipeline': 100,
 }
 
 SPIDER_MIDDLEWARES = {
@@ -84,13 +87,13 @@ DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.retry.RetryMiddleware':None,
     'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': None,
     'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
-    'crawling.downloadermiddlewares.CustomUserAgentMiddleware': 400,
+    'structor.downloadermiddlewares.CustomUserAgentMiddleware': 400,
     # Handle timeout retries with the redis scheduler and logger
-    'crawling.downloadermiddlewares.CustomRetryMiddleware': 510,
+    'structor.downloadermiddlewares.CustomRetryMiddleware': 510,
     # custom cookies to not persist across crawl requests
     # cookie中间件需要放在验证码中间件后面，验证码中间件需要放到代理中间件后面
-    'crawling.downloadermiddlewares.CustomCookiesMiddleware': 585,
-    'crawling.downloadermiddlewares.CustomRedirectMiddleware': 600,
+    'structor.downloadermiddlewares.CustomCookiesMiddleware': 585,
+    'structor.downloadermiddlewares.CustomRedirectMiddleware': 600,
 }
 
 # 在生产上关闭内建logging
