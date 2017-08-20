@@ -1,2 +1,4 @@
 scrapy
 custom-redis
+psutil
+pythonjsonlogger
