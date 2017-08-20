@@ -8,7 +8,7 @@ from ..items.douban_item import FilmBaseItem, QuestionItem, AnswerItem, ReviewIt
 class DoubanSpider(StructureSpider):
     name = "douban"
     item_pattern = ('//div[@class="title"]/a/@href',)
-    page_pattern = ('//a[@class="next"]/@href')
+    page_pattern = ('//a[@class="next"]/@href',)
 
     @staticmethod
     def get_base_loader(response):
