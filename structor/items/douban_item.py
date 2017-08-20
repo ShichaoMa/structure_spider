@@ -24,7 +24,7 @@ class FilmBaseItem(BaseItem):
     score = Field()
     description = Field()
     celebrities = Field(output_processor=TakeAll())
-    related_pics = Field(output_processor=TakeAll())
+    related_pics = Field()
     recommendations = Field(output_processor=TakeAll())
     comments = Field(output_processor=TakeAll())
     questions = Field(output_processor=TakeAll())
