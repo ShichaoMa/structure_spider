@@ -17,7 +17,7 @@ from . import BaseItem
 from ..spiders.utils import format_html_string, TakeAll
 
 
-class FilmBaseItem(BaseItem):
+class FilmItem(BaseItem):
     product_id = Field()
     title = Field()
     info = Field(input_processor=MapCompose(format_html_string))
