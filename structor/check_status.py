@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
-import sys
 import fnmatch
 import argparse
+
+from redis import Redis
 
 
 def format(d, f=False):
@@ -13,13 +14,8 @@ def format(d, f=False):
             print("%s -->  %s"%(k.ljust(30), v))
 
 
-def start(crawlid, host, custom):
-    if custom:
-        from custom_redis.client import Redis
-    else:
-        from redis import Redis
-
-    redis_conn = Redis(host)
+def start(crawlid, host, port):
+    redis_conn = Redis(host, port)
     key = "crawlid:%s"%crawlid
     data = redis_conn.hgetall(key)
     failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x, "failed_download_*")]
@@ -35,12 +31,11 @@ def start(crawlid, host, custom):
 def main():
     parser = argparse.ArgumentParser(description="usage: %prog [options]")
     parser.add_argument("--host", default="127.0.0.1", help="redis host")
-    parser.add_argument("-p", "--port", default="6379", help="redis port")
+    parser.add_argument("-p", "--port", default=6379, help="redis port")
     parser.add_argument("crawlids", nargs="+", help="Crawlids to check. ")
-    parser.add_argument("--custom", action="store_true", default=False, help="Use the custom redis whether or not. ")
     args = parser.parse_args()
     for crawlid in args.crawlids:
-        start(crawlid=crawlid, host=args.host, custom=args.custom)
+        start(crawlid=crawlid, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
