@@ -542,7 +542,7 @@ class Logger(object):
         logger.logger.propagate = False
         logger.json = json
         logger.name = name
-        logger.format_string = '%(asctime)s [%(name)s][%(module)s.%(funcName)s:%(lineno)d] %(levelname)s: %(message)s'
+        logger.format_string = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
         root = logging.getLogger()
         # 将的所有使用Logger模块生成的logger设置一样的logger level
         for log in root.manager.loggerDict.keys():
