@@ -37,13 +37,12 @@ class CustomStart(startproject.Command):
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
-        print("New web-walker project %r, using template directory %r, created in:" % \
+        print("New structure-spider project %r, using template directory %r, created in:" % \
               (project_name, self.templates_dir))
         print("    %s\n" % abspath(project_dir))
-        print("You can start the demo spider with:")
-        print("    custom-redis-server --host 127.0.0.1 -p 6379")
+        print("You can start the spider with:")
         print("    cd %s" % project_dir)
-        print("    scrapy crawl bluefly")
+        print("    scrapy crawl douban")
 
 
 def start():
