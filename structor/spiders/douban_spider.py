@@ -27,7 +27,11 @@ class DoubanSpider(StructureSpider):
         if celebrities_url:
             nodes.append(("celebrities", item_loader, {"url": response.urljoin(celebrities_url)}))
 
-        related_pic_url =["", ""].extend(response.xpath('//div[@id="related-pic"]/h2/span[@class="pl"]/a/@href').extract())[-2]
+        related_pic_urls = response.xpath('//div[@id="related-pic"]/h2/span[@class="pl"]/a/@href').extract()
+        if len(related_pic_urls) >= 2:
+            related_pic_url = related_pic_urls[-2]
+        else:
+            related_pic_url = ""
         if related_pic_url:
             nodes.append(("related_pics", item_loader, {"url": related_pic_url}))
 
