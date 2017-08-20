@@ -109,6 +109,6 @@ DOWNLOAD_TIMEOUT = int(os.environ.get('DOWNLOAD_TIMEOUT', 30))
 DNSCACHE_ENABLED = True
 
 try:
-    from localsettings import *
+    from .localsettings import *
 except ImportError:
     pass
