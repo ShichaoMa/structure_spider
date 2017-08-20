@@ -80,7 +80,7 @@ class RedisFeed(object):
                     "crawlid": self.crawlid,
                     "spiderid": self.spiderid,
                     "priority": self.priority,
-                    "callback": "parse_item"
+                    "callback": "parse"
                 }
                 self.failed_count += self.feed(self.get_name(), json.dumps(req_meta))
                 sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
