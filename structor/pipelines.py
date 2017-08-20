@@ -34,8 +34,8 @@ class MongoPipeline(BasePipeline):
     def __init__(self, settings):
         super(MongoPipeline, self).__init__(settings)
         import pymongo
-        self.db = pymongo.MongoClient("192.168.200.120")["products"]
-        self.col = self.db["test"]
+        self.db = pymongo.MongoClient(settings.get("MONGO_HOST"), settings.get("MONGO_PORT"))[settings.get("MONGO_DB")]
+        self.col = self.db[settings.get("MONGO_TABLE")]
 
     def process_item(self, item, spider):
         self.col.insert(json.loads(json.dumps(item, cls=ItemEncoder)))

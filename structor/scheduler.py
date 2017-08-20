@@ -4,10 +4,9 @@ import types
 import pickle
 import random
 
-from redis import Redis
 from scrapy.http.request import Request
 
-from .spiders.utils import Logger, parse_cookie, P22P3Encoder
+from .spiders.utils import Logger, parse_cookie
 from .spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
 
 
@@ -20,6 +19,10 @@ class Scheduler(object):
 
         self.settings = crawler.settings
         self.logger = Logger.from_crawler(crawler)
+        if self.settings.get("CUSTOM_REDIS"):
+            from custom_redis.client import Redis
+        else:
+            from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.get("REDIS_PORT"))
         self.queue_name = "%s:*:queue"
@@ -72,13 +75,16 @@ class Scheduler(object):
                              (queue, self.redis_conn.zcard(queue)))
 
             item = None
-            pipe = self.redis_conn.pipeline()
-            pipe.multi()
-            pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
-            result, count = pipe.execute()
+            if self.settings.get("CUSTOM_REDIS"):
+                item = self.redis_conn.zpop(queue)
+            else:
+                pipe = self.redis_conn.pipeline()
+                pipe.multi()
+                pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
+                result, count = pipe.execute()
 
-            if result:
-                item = result[0]
+                if result:
+                    item = result[0]
 
             if item:
                 #item = json.loads(item.decode("utf-8"))

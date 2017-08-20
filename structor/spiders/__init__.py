@@ -20,8 +20,8 @@ class StructureSpider(Spider):
 
     name = "structure"
     have_duplicate = False
-    item_xpath = tuple()
-    page_xpath = tuple()
+    item_pattern = tuple()
+    page_pattern = tuple()
     log = LoggerDescriptor()
 
     def __init__(self, *args, **kwargs):
@@ -45,7 +45,7 @@ class StructureSpider(Spider):
         raise DontCloseSpider
 
     def extract_item_urls(self, response):
-        return [response.urljoin(x) for x in set(response.xpath("|".join(self.item_xpath)).extract())]
+        return [response.urljoin(x) for x in set(response.xpath("|".join(self.item_pattern)).extract())]
 
     @staticmethod
     def adjust(response):
@@ -60,7 +60,7 @@ class StructureSpider(Spider):
         response.meta["priority"] -= 20
 
     def extract_page_urls(self, response, effective_urls):
-        xpath = "|".join(self.page_xpath)
+        xpath = "|".join(self.page_pattern)
 
         if xpath.count("?") == 1:
             next_page_urls = [url_arg_increment(xpath, response.url)] if len(effective_urls) else []

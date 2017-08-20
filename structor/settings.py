@@ -75,7 +75,7 @@ STATS_CLASS = 'structor.stats_collectors.StatsCollector'
 
 # Store scraped item in redis for post-processing.
 ITEM_PIPELINES = {
-    'structor.pipelines.MongoPipeline': 100,
+    # 'structor.pipelines.MongoPipeline': 100,
 }
 
 SPIDER_MIDDLEWARES = {
@@ -108,3 +108,7 @@ DOWNLOAD_TIMEOUT = int(os.environ.get('DOWNLOAD_TIMEOUT', 30))
 # Avoid in-memory DNS cache. See Advanced topics of docs for info
 DNSCACHE_ENABLED = True
 
+try:
+    from localsettings import *
+except ImportError:
+    pass
