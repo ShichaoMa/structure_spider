@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 import sys
-import json
+import pickle
 import argparse
 import traceback
-
+from redis import RedisError, Redis
 
 class RedisFeed(object):
 
@@ -20,12 +20,6 @@ class RedisFeed(object):
         self.custom = custom
         self.inc = 0
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
-
-        if self.custom:
-            from custom_redis.client import Redis
-        else:
-            from redis import Redis
-
         self.redis_conn = Redis(host=self.host, port=self.port)
         self.clean_previous_task(self.crawlid)
 
@@ -66,7 +60,7 @@ class RedisFeed(object):
                         "priority": self.priority,
                         "callback": "parse_item"
                     }
-                    self.failed_count += self.feed(self.get_name(), json.dumps(req_meta))
+                    self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
                     success_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
         # 分类抓取
@@ -82,7 +76,7 @@ class RedisFeed(object):
                     "priority": self.priority,
                     "callback": "parse"
                 }
-                self.failed_count += self.feed(self.get_name(), json.dumps(req_meta))
+                self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
                 sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
         print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(success_rate, failed_rate))
 
@@ -90,12 +84,6 @@ class RedisFeed(object):
         return "{sid}:item:queue".format(sid=self.spiderid)
 
     def feed(self, queue_name, req):
-
-        if self.custom:
-            from custom_redis.client.errors import RedisError
-        else:
-            from redis import RedisError
-
         try:
             self.redis_conn.zadd(queue_name, req, -self.priority)
             return 0
