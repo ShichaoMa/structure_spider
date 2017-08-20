@@ -25,7 +25,7 @@ DEFAULT_REQUEST_HEADERS = {
 
 
 # 自带了一些user_agents，推荐不改
-USER_AGENT_LIST = pkgutil.get_data('$project_name', 'user_agents.list')
+USER_AGENT_LIST = pkgutil.get_data('structor', 'user_agents.list')
 
 # 重试次数
 RETRY_TIMES = int(os.environ.get('RETRY_TIMES', 100))
