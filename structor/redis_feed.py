@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import sys
-import pickle
+import json
 import argparse
 import traceback
 
@@ -66,7 +66,7 @@ class RedisFeed(object):
                         "priority": self.priority,
                         "callback": "parse_item"
                     }
-                    self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
+                    self.failed_count += self.feed(self.get_name(), json.dumps(req_meta))
                     success_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
         # 分类抓取
@@ -82,7 +82,7 @@ class RedisFeed(object):
                     "priority": self.priority,
                     "callback": "parse_item"
                 }
-                self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
+                self.failed_count += self.feed(self.get_name(), json.dumps(req_meta))
                 sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
         print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(success_rate, failed_rate))
 
