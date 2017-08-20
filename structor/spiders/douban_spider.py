@@ -160,10 +160,8 @@ class DoubanSpider(StructureSpider):
     @enrich_wrapper
     def enrich_review(self, item_loader, response):
         self.logger.debug("Start to enrich_review. ")
-        import pdb
-        pdb.set_trace()
         item_loader.add_xpath("title", '//div[@id="content"]/h1/span/text()')
-        item_loader.add_xpath("content", ['//div[@id="link-report"]/div/p/text()', '//div[@id="link-report"]/div/text()'])
+        item_loader.add_xpath("content", '//div[@id="link-report"]/div')
         item_loader.add_xpath("author", '//div[@class="article"]/div/div/header/a/span/text()')
         item_loader.add_xpath("datetime", '//div[@class="article"]/div/div/header/span[@class="main-meta"]/text()')
         item_loader.add_xpath("score", '//div[@class="article"]/div/div/header/span[contains(@class, "rating")]/@class',

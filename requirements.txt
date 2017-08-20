@@ -1,4 +1,4 @@
 scrapy
-custom-redis
+redis
 psutil
 python-json-logger>=0.1.2

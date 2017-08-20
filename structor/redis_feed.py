@@ -7,7 +7,7 @@ from redis import RedisError, Redis
 
 class RedisFeed(object):
 
-    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host, custom):
+    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host):
 
         self.name = "redis_feed"
         self.crawlid = crawlid
@@ -17,7 +17,6 @@ class RedisFeed(object):
         self.priority = priority
         self.port = port
         self.host = host
-        self.custom = custom
         self.inc = 0
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
         self.redis_conn = Redis(host=self.host, port=self.port)
@@ -34,7 +33,6 @@ class RedisFeed(object):
         parser.add_argument('-c', '--crawlid', required=True, type=str, help="An unique Id for a crawl task. ")
         parser.add_argument('-s', '--spiderid', required=True, type=str, help="The website you wanna crawl. ")
         parser.add_argument('-p', '--priority', type=int, default=100, help="Feed in the task queue with priority. ")
-        parser.add_argument('--custom', action="store_true", help="Use the custom redis whether or not. ")
         return cls(**vars(parser.parse_args()))
 
     def clean_previous_task(self, crawlid):
