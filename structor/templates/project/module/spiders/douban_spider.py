@@ -2,7 +2,7 @@
 from w3lib.html import replace_entities
 from structor.spiders import StructureSpider
 from structor.spiders.utils import xpath_exchange, CustomLoader, re_search, safely_json_loads, enrich_wrapper
-from structor.items.douban_item import FilmBaseItem, QuestionItem, AnswerItem, ReviewItem
+from structor.items.douban_item import FilmItem, QuestionItem, AnswerItem, ReviewItem
 
 
 class DoubanSpider(StructureSpider):
@@ -10,7 +10,7 @@ class DoubanSpider(StructureSpider):
 
     @staticmethod
     def get_base_loader(response):
-        return CustomLoader(item=FilmBaseItem())
+        return CustomLoader(item=FilmItem())
 
     @enrich_wrapper
     def enrich_data(self, item_loader, response):
