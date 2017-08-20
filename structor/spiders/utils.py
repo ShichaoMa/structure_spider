@@ -451,7 +451,7 @@ def findCaller(stack_info=False):
     while hasattr(f, "f_code"):
         co = f.f_code
         filename = os.path.normcase(co.co_filename)
-        if not (filename.count("crawling") and not filename.count("utils")):
+        if not filename.count("utils"):
             f = f.f_back
             continue
         sinfo = None
