@@ -30,13 +30,17 @@ from scrapy.loader.processors import Compose
 
 
 class TakeAll(object):
-
+    """
+    自定义TakeAll
+    """
     def __call__(self, values):
         return values
 
 
 class TakeFirst(object):
-
+    """
+    自定义TakeFirst
+    """
     def __call__(self, values):
         return_value = None
         for value in values:
@@ -46,8 +50,441 @@ class TakeFirst(object):
         return return_value
 
 
-class ItemCollector(object):
+def strip(value, chars=None):
+    """
+    strip字段
+    :param value:
+    :param chars:
+    :return:
+    """
+    if isinstance(value, str):
+        return value.strip(chars)
+    return value
 
+
+def decode(value, encoding="utf-8"):
+    """
+    decode字段
+    :param value:
+    :param encoding:
+    :return:
+    """
+    return value.decode(encoding)
+
+
+def encode(value, encoding="utf-8"):
+    """
+    encode字段
+    :param value:
+    :param encoding:
+    :return:
+    """
+    return value.encode(encoding)
+
+
+def rid(value, repl):
+    """
+    去掉指定字段
+    :param value:
+    :param repl: 去掉的字段
+    :return:
+    """
+    value.replace(repl, "")
+
+
+def xpath_exchange(x):
+    """
+    将xpath结果集进行抽取拼接成字符串
+    :param x:
+    :return:
+    """
+    return "".join(x.extract()).strip()
+
+
+def re_exchange(x):
+    """
+    将re的结果集进行抽取拼接成字符串
+    :param x:
+    :param item:
+    :return:
+    """
+    return "".join(x).strip()
+
+
+def wrap_key(json_str, key_pattern=re.compile(r"([a-zA-Z_]\w*)[\s]*\:")):
+    """
+    将javascript 对象字串串形式的key转换成被双字符包裹的格式如{a: 1} => {"a": 1}
+    :param json_str:
+    :param key_pattern:
+    :return:
+    """
+    json_str = key_pattern.sub('"\g<1>":', json_str)
+    return json_str
+
+
+def safely_json_loads(json_str, defaulttype=dict, escape=True):
+    """
+    返回安全的json类型
+    :param json_str: 要被loads的字符串
+    :param defaulttype: 若load失败希望得到的对象类型
+    :param escape: 是否将单引号变成双引号
+    :return:
+    """
+    if not json_str:
+        return defaulttype()
+    elif escape:
+        data = replace_quote(json_str)
+        return json.loads(data)
+    else:
+        return json.loads(json_str)
+
+
+def chain_all(iter):
+    """
+    连接两个序列或字典
+    :param iter:
+    :return:
+    """
+    iter = list(iter)
+    if not iter:
+        return []
+    if isinstance(iter[0], dict):
+        result = {}
+        for i in iter:
+            result.update(i)
+    else:
+        result = reduce(lambda x, y: list(x) + list(y), iter)
+    return result
+
+
+def replace_quote(json_str):
+    """
+    将要被json.loads的字符串的单引号转换成双引号，如果该单引号是元素主体，而不是用来修饰字符串的。则不对其进行操作。
+    :param json_str:
+    :return:
+    """
+    if not isinstance(json_str, str):
+        return json_str
+    double_quote = []
+    new_lst = []
+    for index, val in enumerate(json_str):
+        if val == '"' and json_str[index - 1] != "\\":
+            if double_quote:
+                double_quote.pop(0)
+            else:
+                double_quote.append(val)
+        if val == "'" and json_str[index - 1] != "\\":
+            if not double_quote:
+                val = '"'
+        new_lst.append(val)
+    return "".join(new_lst)
+
+
+def format_html_string(html):
+    """
+    格式化html
+    :param html:
+    :return:
+    """
+    trims = [(r'\n', ''),
+             (r'\t', ''),
+             (r'\r', ''),
+             (r'  ', ''),
+             (r'\u2018', "'"),
+             (r'\u2019', "'"),
+             (r'\ufeff', ''),
+             (r'\u2022', ":"),
+             (r"<([a-z][a-z0-9]*)\ [^>]*>", '<\g<1>>'),
+             (r'<\s*script[^>]*>[^<]*<\s*/\s*script\s*>', ''),
+             (r"</?a.*?>", '')]
+    return reduce(lambda string, replacement: re.sub(replacement[0], replacement[1], html), trims, html)
+
+
+def urldecode(query):
+    """
+    与urlencode相反，不过没有unquote
+    :param query:
+    :return:
+    """
+    return dict(x.split("=") for x in query.split("&"))
+
+
+def re_search(re_str, text, dotall=True):
+    """
+    抽取正则规则的第一组元素
+    :param re_str:
+    :param text:
+    :param dotall:
+    :return:
+    """
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
+
+    if not isinstance(re_str, list):
+        re_str = [re_str]
+
+    for rex in re_str:
+
+        if dotall:
+            match_obj = re.search(rex, text, re.DOTALL)
+        else:
+            match_obj = re.search(rex, text)
+
+        if match_obj is not None:
+            t = match_obj.group(1).replace('\n', '')
+            return t
+
+    return ""
+
+
+def retry_wrapper(retry_times, exception=Exception, error_handler=None, interval=0.1):
+    """
+    函数重试装饰器
+    :param retry_times: 重试次数
+    :param exception: 需要重试的异常
+    :param error_handler: 出错时的回调函数
+    :param interval: 重试间隔时间
+    :return:
+    """
+
+    def out_wrapper(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            count = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except exception as e:
+                    count += 1
+                    if error_handler:
+                        result = error_handler(func.__name__, count, e, *args, **kwargs)
+                        if result:
+                            count -= 1
+                    if count >= retry_times:
+                        raise
+                    time.sleep(interval)
+
+        return wrapper
+
+    return out_wrapper
+
+
+class P22P3Encoder(json.JSONEncoder):
+    """
+    python2转换python3时使用的json encoder
+    """
+
+    def default(self, obj):
+        if isinstance(obj, bytes):
+            return obj.decode("utf-8")
+        if isinstance(obj, (types.GeneratorType, map, filter)):
+            return list(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+def timeout(timeout_time, default):
+    """
+    Decorate a method so it is required to execute in a given time period,
+    or return a default value.
+    :param timeout_time:
+    :param default:
+    :return:
+    """
+
+    class DecoratorTimeout(Exception):
+        pass
+
+    def timeout_function(f):
+        def f2(*args):
+            def timeout_handler(signum, frame):
+                raise DecoratorTimeout()
+
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            # triger alarm in timeout_time seconds
+            signal.alarm(timeout_time)
+            try:
+                retval = f(*args)
+            except DecoratorTimeout:
+                return default
+            finally:
+                signal.signal(signal.SIGALRM, old_handler)
+            signal.alarm(0)
+            return retval
+
+        return f2
+
+    return timeout_function
+
+
+def custom_re(regex, text):
+    """
+    模仿selector.re
+    :param regex:
+    :param text:
+    :return:
+    """
+    return re.findall(regex, text)
+
+
+def replace_dot(data):
+    """
+    mongodb不支持key中带有.，该函数用来将.转换成_
+    :param data:
+    :return:
+    """
+    new_data = {}
+    for k, v in data.items():
+        new_data[k.replace(".", "_")] = v
+
+    return new_data
+
+
+def groupby(it, key):
+    """
+    自实现groupby，itertool的groupby不能合并不连续但是相同的组, 且返回值是iter
+    :return: 字典对象
+    """
+    groups = dict()
+    for item in it:
+        groups.setdefault(key(item), []).append(item)
+    return groups
+
+
+class CustomLoader(ItemLoader):
+    """
+    自定义ItemLoader
+    """
+    default_output_processor = Compose(TakeFirst(), strip)
+
+    def add_re(self, field_name, regex, **kwargs):
+        """
+        自实现add_re方法
+        :param field_name:
+        :param regex:
+        :param kwargs:
+        :return:
+        """
+        replace_entities = True
+        regexs = arg_to_iter(regex)
+        while True:
+            try:
+                for regex in regexs:
+                    self.add_value(field_name, self.selector.re(regex, replace_entities), **kwargs)
+                break
+            except json.decoder.JSONDecodeError:
+                replace_entities = False
+
+    def load_item(self):
+        """
+        增加skip, default, order的实现
+        :return:
+        """
+        item = self.item
+        skip_fields = []
+        for field_name, field in sorted(item.fields.items(), key=lambda item: item[1].get("order", 0)):
+            value = self.get_output_value(field_name)
+            if field.get("skip"):
+                skip_fields.append(field_name)
+            item[field_name] = value or field.get("default", "")
+
+        for field in skip_fields:
+            del item[field]
+        return item
+
+    def __str__(self):
+        return "<CustomLoader item: %s at %s >" % (self.item.__class__, id(self))
+
+    __repr__ = __str__
+
+
+def enrich_wrapper(func):
+    """
+    item_loader在使用pickle 序列化时，不能包含response对象和selector对象, 使用该装饰器，
+    在进去enrich函数之前加上selector，使用完毕后清除selector
+    :param func:
+    :return:
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        item_loader = args[1]
+        response = args[2]
+        selector = Selector(text=response.text)
+        item_loader.selector = selector
+        result = func(*args, **kwargs)
+        item_loader.selector = None
+
+        return result
+
+    return wrapper
+
+
+def parse_cookie(string):
+    """
+    解析cookie
+    :param string:
+    :return:
+    """
+    results = re.findall('([^=]+)=([^\;]+);?\s?', string)
+    my_dict = {}
+
+    for item in results:
+        my_dict[item[0]] = item[1]
+
+    return my_dict
+
+
+def _get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    import fcntl
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(), 0x8915, struct.pack('256s', ifname[:15])
+    )[20:24])
+
+
+def _get_net_interface():
+    p = os.popen("ls /sys/class/net")
+    buf = p.read(10000)
+    return buf.strip(" \nlo")
+
+
+def get_netcard():
+    netcard_info = []
+    info = psutil.net_if_addrs()
+    for k, v in info.items():
+        for item in v:
+            if item[0] == 2 and not item[1] == '127.0.0.1':
+                netcard_info.append((k, item[1]))
+    return netcard_info
+
+
+def get_ip_address():
+    """
+    获取本机局域网ip
+    :return:
+    """
+    if sys.platform == "win32":
+        hostname = socket.gethostname()
+        IPinfo = socket.gethostbyname_ex(hostname)
+        try:
+            return IPinfo[-1][-1]
+        except IndexError:
+            return "127.0.0.1"
+    else:
+        ips = get_netcard()
+
+        if ips:
+            return ips[0][1]
+        else:
+            shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
+            return os.popen(shell_command).read().strip()
+
+
+class ItemCollector(object):
+    """
+    ItemCollector的实现
+    """
     def __init__(self):
         self.tuples = list()
         self.depth = 0
@@ -125,8 +562,6 @@ class ItemCollector(object):
                 return self.current_node
 
     def load(self, response):
-        # import pdb
-        # pdb.set_trace()
         while True:
             prop, current_item_loader, kwargs = self.dive()
             if not kwargs:
@@ -140,283 +575,18 @@ class ItemCollector(object):
                 meta.update(custom_meta)
                 kw = copy.deepcopy(kwargs)
                 kwargs.clear()
-                # import pdb
-                # pdb.set_trace()
                 return Request(meta=meta, callback="parse_next", errback="errback", **kw)
 
 
-def c_re_sub(string, pattern, repl):
-    return re.sub(pattern, repl, string)
-
-
-def strip(value):
-    if isinstance(value, str):
-        return value.strip()
-    return value
-
-
-def function_xpath_common(x, item):
-    """
-    xpath转换公共函数
-    :param x:
-    :param item:
-    :return:
-    """
-    return xpath_exchange(x)
-
-
-def format_html_xpath_common(x, item):
-    """
-    直接需要抽取html的字段的公共函数
-    :param x:
-    :param item:
-    :return:
-    """
-    return format_html_string(xpath_exchange(x))
-
-
-def xpath_exchange(x):
-    """
-    将xpath结果集进行抽取拼接成字符串
-    :param x:
-    :return:
-    """
-    return "".join(x.extract()).strip()
-
-
-def function_re_common(x, item):
-    """
-    re转换公共函数
-    :param x:
-    :param item:
-    :return:
-    """
-    return re_exchange(x)
-
-
-def safely_json_re_common(x, item):
-    """
-    直接需要抽取json数据的字段的公共函数
-    :param x:
-    :param item:
-    :return:
-    """
-    return safely_json_loads(re_exchange(x).replace('&nbsp;', ''))
-
-
-def re_exchange(x):
-    """
-    将re的结果集进行抽取拼接成字符串
-    :param x:
-    :param item:
-    :return:
-    """
-    return "".join(x).strip()
-
-
-def safely_json_loads(json_str, defaulttype=dict, escape=True):
-    """
-    返回安全的json类型
-    :param json_str: 要被loads的字符串
-    :param defaulttype: 若load失败希望得到的对象类型
-    :param escape: 是否将单引号变成双引号
-    :return:
-    """
-    if not json_str:
-        return defaulttype()
-    elif escape:
-        data = replace_quote(json_str)
-        return json.loads(data)
-    else:
-        return json.loads(json_str)
-
-
-def chain_all(iter):
-    """
-    连接两个序列或字典
-    :param iter:
-    :return:
-    """
-    iter = list(iter)
-    if not iter:
-        return None
-    if isinstance(iter[0], dict):
-        result = {}
-        for i in iter:
-            result.update(i)
-    else:
-        result = reduce(lambda x, y: list(x)+list(y), iter)
-    return result
-
-
-def replace_quote(json_str):
-    """
-    将要被json.loads的字符串的单引号转换成双引号，如果该单引号是元素主体，而不是用来修饰字符串的。则不对其进行操作。
-    :param json_str:
-    :return:
-    """
-    if not isinstance(json_str, str):
-        return json_str
-    double_quote = []
-    new_lst = []
-    for index, val in enumerate(json_str):
-        if val == '"' and json_str[index-1] != "\\":
-            if double_quote:
-                double_quote.pop(0)
-            else:
-                double_quote.append(val)
-        if val== "'" and json_str[index-1] != "\\":
-            if not double_quote:
-                val = '"'
-        new_lst.append(val)
-    return "".join(new_lst)
-
-
-def format_html_string(a_string):
-    """
-    格式化html
-    :param a_string:
-    :return:
-    """
-    a_string = a_string.replace('\n', '')
-    a_string = a_string.replace('\t', '')
-    a_string = a_string.replace('\r', '')
-    a_string = a_string.replace('  ', '')
-    a_string = a_string.replace(u'\u2018', "'")
-    a_string = a_string.replace(u'\u2019', "'")
-    a_string = a_string.replace(u'\ufeff', '')
-    a_string = a_string.replace(u'\u2022', ":")
-    re_ = re.compile(r"<([a-z][a-z0-9]*)\ [^>]*>", re.IGNORECASE)
-    a_string = re_.sub('<\g<1>>', a_string, 0)
-    re_script = re.compile('<\s*script[^>]*>[^<]*<\s*/\s*script\s*>', re.I)
-    a_string = re_script.sub('', a_string)
-    re_a = re.compile("</?a.*?>")
-    a_string = re_a.sub("", a_string)
-    return a_string
-
-
-def re_search(re_str, text, dotall=True):
-    """
-    抽取正则规则的第一组元素
-    :param re_str:
-    :param text:
-    :param dotall:
-    :return:
-    """
-    if isinstance(text, bytes):
-        text = text.decode("utf-8")
-
-    if not isinstance(re_str, list):
-        re_str = [re_str]
-
-    for rex in re_str:
-
-        if dotall:
-            match_obj = re.search(rex, text, re.DOTALL)
-        else:
-            match_obj = re.search(rex, text)
-
-        if match_obj is not None:
-            t = match_obj.group(1).replace('\n', '')
-            return t
-
-    return ""
-
-
-class CustomLoader(ItemLoader):
-    default_output_processor = Compose(TakeFirst(), strip)
-
-    def add_re(self, field_name, regex):
-        regexs = arg_to_iter(regex)
-        for regex in regexs:
-            self.add_value(field_name, self.selector.re(regex))
-
-    def load_item(self):
-        item = self.item
-        skip_fields = []
-        for field_name, field in sorted(item.fields.items(), key=lambda item: item[1].get("order", 0)):
-            value = self.get_output_value(field_name)
-            if field.get("skip"):
-                skip_fields.append(field_name)
-            item[field_name] = value or field.get("default", "")
-
-        for field in skip_fields:
-            del item[field]
-        return item
-
-
-def enrich_wrapper(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        item_loader = args[1]
-        response = args[2]
-        item_loader.selector = Selector(text=response.text)
-        result = func(*args, **kwargs)
-        item_loader.selector = None
-        return result
-    return wrapper
-
-
-class P22P3Encoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, bytes):
-           return obj.decode("utf-8")
-        if isinstance(obj, (types.GeneratorType, map, filter)):
-            return list(obj)
-        # Let the base class default method raise the TypeError
-        return json.JSONEncoder.default(self, obj)
-
-
 class ItemEncoder(json.JSONEncoder):
+    """
+    将Item转换成字典
+    """
     def default(self, obj):
         if isinstance(obj, Item):
             return dict(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
-
-
-def timeout(timeout_time, default):
-    '''
-    Decorate a method so it is required to execute in a given time period,
-    or return a default value.
-    '''
-
-    class DecoratorTimeout(Exception):
-        pass
-
-    def timeout_function(f):
-        def f2(*args):
-            def timeout_handler(signum, frame):
-                raise DecoratorTimeout()
-
-            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-            # triger alarm in timeout_time seconds
-            signal.alarm(timeout_time)
-            try:
-                retval = f(*args)
-            except DecoratorTimeout:
-                return default
-            finally:
-                signal.signal(signal.SIGALRM, old_handler)
-            signal.alarm(0)
-            return retval
-
-        return f2
-
-    return timeout_function
-
-
-def custom_re(regex, text):
-    return re.findall(regex, text)
-
-
-def replace_dot(data):
-
-    new_data = {}
-    for k, v in data.items():
-        new_data[k.replace(".", "_")] = v
-
-    return new_data
 
 
 def extras_wrapper(self, item):
@@ -608,61 +778,6 @@ class LoggerDescriptor(object):
         raise AttributeError
 
 
-def parse_cookie(string):
-    results = re.findall('([^=]+)=([^\;]+);?\s?', string)
-    my_dict = {}
-
-    for item in results:
-        my_dict[item[0]] = item[1]
-
-    return my_dict
-
-
-def _get_ip_address(ifname):
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    import fcntl
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(), 0x8915, struct.pack('256s', ifname[:15])
-    )[20:24])
-
-
-def _get_net_interface():
-
-    p = os.popen("ls /sys/class/net")
-    buf = p.read(10000)
-    return buf.strip(" \nlo")
-
-
-def get_netcard():
-    netcard_info = []
-    info = psutil.net_if_addrs()
-    for k,v in info.items():
-        for item in v:
-            if item[0] == 2 and not item[1]=='127.0.0.1':
-                netcard_info.append((k,item[1]))
-    return netcard_info
-
-
-def get_ip_address():
-
-    if sys.platform == "win32":
-        hostname = socket.gethostname()
-        IPinfo = socket.gethostbyname_ex(hostname)
-        try:
-            return IPinfo[-1][-1]
-        except IndexError:
-            return "127.0.0.1"
-    else:
-        ips = get_netcard()
-
-        if ips:
-            return ips[0][1]
-        else:
-            shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
-            return os.popen(shell_command).read().strip()
-
-
 def url_arg_increment(arg_pattern, url):
     """
     对于使用url arguments标志page字段而实现分页的url，使用这个函数生成下一页url
@@ -692,7 +807,6 @@ def url_arg_increment(arg_pattern, url):
         else:
             midfix = "?" + midfix
         return "%s%s%s" % (url, midfix, first_next_page_index + 1)
-
 
 
 def url_item_arg_increment(index, url, count):
@@ -755,47 +869,6 @@ def repl_wrapper(path, page_num):
         else:
             return path + sub_path
     return _repl
-
-
-def groupby(it, key):
-    """
-    自实现groupby，itertool的groupby不能合并不连续但是相同的组, 且返回值是iter
-    :return: 字典对象
-    """
-    groups = dict()
-    for item in it:
-        groups.setdefault(key(item), []).append(item)
-    return groups
-
-
-def retry_wrapper(retry_times, exception=Exception, error_handler=None, interval=0.1):
-    """
-    函数重试装饰器
-    :param retry_times: 重试次数
-    :param exception: 需要重试的异常
-    :param error_handler: 出错时的回调函数
-    :param interval: 重试间隔时间
-    :return:
-    """
-    def out_wrapper(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            count = 0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except exception as e:
-                    count += 1
-                    if error_handler:
-                        result = error_handler(func.__name__, count, e, *args, **kwargs)
-                        if result:
-                            count -= 1
-                    if count >= retry_times:
-                        raise
-                    time.sleep(interval)
-        return wrapper
-
-    return out_wrapper
 
 
 if __name__ == "__main__":
