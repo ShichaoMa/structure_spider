@@ -1,0 +1,29 @@
+# -*- coding:utf-8 -*-
+"""
+spider编写规则
+1 spider必须继承自StructureSpider
+2 提供get_base_loader静态方法，传入response，返回CustomLoader对应一个Item
+3 提供enrich_data方法，必须被enrich_wrapper装饰，其中：
+    1）传入item_loader, response，使用item_loader的方法(add_value, add_xpath, add_re)添加要抓取的属性名及其对应表达式或值。
+    2）如该次渲染需要产生新的请求，则通过response.meta["item_collector"]提供的(add, extend)方法，
+       将(prop, item_loader, request_meta)添加到item_collector中。其中：
+        prop: 指下次请求获取的全部字段如果做为一个子item返回时，子item在其父item中对应的字段名称。
+        item_loader: 用来抽取下次请求字段的item_loader，如果下次请求返回子item，则此item_loader与父级item_loader不同
+        request_meta: 组建request所需要的kwargs type: dict
+4 下次请求所回调的enrich函数名称为 enrich_`prop`
+"""
+from structor.spiders import StructureSpider
+from structor.spiders.utils import CustomLoader, enrich_wrapper
+from ..items.{{class_name.lower()}}_item import {{class_name}}Item
+
+
+class {{class_name}}Spider(StructureSpider):
+    name = "{{spider_name}}"
+
+    @staticmethod
+    def get_base_loader(response):
+        return CustomLoader(item={{class_name}}Item())
+
+    @enrich_wrapper
+    def enrich_data(self, item_loader, response):
+        pass

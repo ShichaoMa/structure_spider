@@ -44,6 +44,9 @@ REDIRECT_MAX_TIMES = int(os.environ.get('REDIRECT_MAX_TIMES', 20))
 # 每次重定向优先级调整
 REDIRECT_PRIORITY_ADJUST = int(os.environ.get('REDIRECT_PRIORITY_ADJUST', -1))
 
+# 最大请求速度n/min
+SPEED = 10
+
 # 日志配置
 SC_LOG_LEVEL = os.environ.get('SC_LOG_LEVEL', 'DEBUG')
 SC_LOG_JSON = eval(os.environ.get('SC_LOG_JSON', "False"))

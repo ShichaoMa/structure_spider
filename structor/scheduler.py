@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import json
+import time
 import types
 import pickle
 import random
@@ -25,6 +25,9 @@ class Scheduler(object):
                                 self.settings.get("REDIS_PORT"))
         self.queue_name = "%s:*:queue"
         self.queues = {}
+        self.request_interval = 60/self.settings.getint("SPEED", 60)
+        self.last_acs_time = time.time()
+
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -73,6 +76,8 @@ class Scheduler(object):
                              (queue, self.redis_conn.zcard(queue)))
 
             item = None
+            if time.time() - self.request_interval < self.last_acs_time:
+                return item
             pipe = self.redis_conn.pipeline()
             pipe.multi()
             pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
@@ -82,7 +87,7 @@ class Scheduler(object):
                 item = result[0]
 
             if item:
-                #item = json.loads(item.decode("utf-8"))
+                self.last_acs_time = time.time()
                 item = pickle.loads(item)
                 self.present_item = item
                 headers = item.get("headers", {})

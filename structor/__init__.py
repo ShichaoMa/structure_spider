@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 from .redis_feed import RedisFeed
 from .check_status import main
-from .start_project import start as start_project
+from .start_project import start as start_project, create as create_spider
 
-VERSION = '0.8.8'
+VERSION = '0.9.0'
 
 AUTHOR = "cn"
 

@@ -5,7 +5,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '0.8.8'
+VERSION = '0.9.0'
 
 AUTHOR = "cn"
 
@@ -43,7 +43,8 @@ setup(
         'console_scripts': [
             'feed = structor:feed',
             'check = structor:check',
-            'startproject = structor:start_project'
+            'startproject = structor:start_project',
+            'createspider = structor:create_spider'
         ],
     },
     keywords = KEYWORDS,
@@ -52,7 +53,7 @@ setup(
     url = URL,
     license = LICENSE,
     packages = PACKAGES,
-    install_requires=["scrapy", "psutil", "python-json-logger>=0.1.2", "redis"],
+    install_requires=["scrapy", "psutil", "python-json-logger>=0.1.2", "redis", "jinja2"],
     include_package_data=True,
     zip_safe=True,
 )
