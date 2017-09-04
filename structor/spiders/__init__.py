@@ -4,7 +4,7 @@
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from scrapy.spiders import Spider
 from scrapy import signals, Request
@@ -23,6 +23,7 @@ class StructureSpider(Spider):
     item_pattern = tuple()
     page_pattern = tuple()
     log = LoggerDescriptor()
+    refresh_page_urls = None
 
     def __init__(self, *args, **kwargs):
         Spider.__init__(self, *args, **kwargs)
@@ -61,15 +62,18 @@ class StructureSpider(Spider):
 
     def extract_page_urls(self, response, effective_urls):
         xpath = "|".join(self.page_pattern)
-
-        if xpath.count("?") == 1:
-            next_page_urls = [url_arg_increment(xpath, response.url)] if len(effective_urls) else []
-        elif xpath.count("subpath="):
-            next_page_urls = [url_path_arg_increment(xpath, response.url)] if len(effective_urls) else []
-        elif xpath.count("/") > 1:
-            next_page_urls = [response.urljoin(x) for x in set(response.xpath(xpath).extract())]
+        if self.refresh_page_urls:
+            page_url = self.refresh_page_urls(response)
         else:
-            next_page_urls = [url_item_arg_increment(xpath, response.url, len(effective_urls))] if len(effective_urls) else []
+            page_url = response.url
+        if xpath.count("?") == 1:
+            next_page_urls = [url_arg_increment(xpath, page_url)] if len(effective_urls) else []
+        elif xpath.count("subpath="):
+            next_page_urls = [url_path_arg_increment(xpath, page_url)] if len(effective_urls) else []
+        elif xpath.count("/") > 1:
+            next_page_urls = [urljoin(page_url, x) for x in set(response.xpath(xpath).extract())]
+        else:
+            next_page_urls = [url_item_arg_increment(xpath, page_url, len(effective_urls))] if len(effective_urls) else []
 
         response.meta["if_next_page"] = True
         response.meta["callback"] = "parse"

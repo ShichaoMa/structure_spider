@@ -50,6 +50,28 @@ class TakeFirst(object):
         return return_value
 
 
+def refresh_prop(func=lambda x: x, interval=30):
+    """
+    每隔interval调用一次函数
+    :param args:
+    :param func:
+    :param interval:
+    :return:
+    """
+    value = None
+    last_time = 0
+
+    def wrapper(*args):
+        nonlocal value, last_time
+
+        if time.time() - last_time > interval:
+            value = func(*args)
+            last_time = time.time()
+        return value
+
+    return wrapper
+
+
 def strip(value, chars=None):
     """
     strip字段
@@ -206,7 +228,9 @@ def urldecode(query):
     :param query:
     :return:
     """
-    return dict(x.split("=") for x in query.split("&"))
+    if not query.strip():
+        return dict()
+    return dict(x.split("=") for x in query.strip().split("&"))
 
 
 def re_search(re_str, text, dotall=True):

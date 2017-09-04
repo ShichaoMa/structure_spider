@@ -2,8 +2,11 @@
 """
 spider编写规则
 1 spider必须继承自StructureSpider
-2 提供get_base_loader静态方法，传入response，返回CustomLoader对应一个Item
-3 提供enrich_data方法，必须被enrich_wrapper装饰，其中：
+2 若执行分类抓取则需要配置item_pattern = (), page_pattern = ()，其中：
+    1）item_pattern元组中的元素为分类页中每个item链接所对应的xpath表达式
+    2）page_pattern元组中的元素可以是下一页链接所所对应的正则表达式，或者其它规则，详见https://github.com/ShichaoMa/webWalker/wiki/%E9%80%9A%E7%94%A8%E6%8A%93%E5%8F%96%E9%85%8D%E7%BD%AE%E6%96%B9%E6%B3%95
+3 提供get_base_loader静态方法，传入response，返回CustomLoader对应一个Item
+4 提供enrich_data方法，必须被enrich_wrapper装饰，其中：
     1）传入item_loader, response，使用item_loader的方法(add_value, add_xpath, add_re)添加要抓取的属性名及其对应表达式或值。
     2）如该次渲染需要产生新的请求，则通过response.meta["item_collector"]提供的(add, extend)方法，
        则将(prop, item_loader, request_meta)添加到item_collector中。其中：

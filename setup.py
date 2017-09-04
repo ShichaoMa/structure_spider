@@ -5,7 +5,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '0.9.4'
+VERSION = '0.9.5'
 
 AUTHOR = "cn"
 
@@ -33,7 +33,7 @@ setup(
     version = VERSION,
     description = DESCRIPTION,
     long_description = LONG_DESCRIPTION,
-    classifiers = [
+    classifiers=[
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Intended Audience :: Developers',

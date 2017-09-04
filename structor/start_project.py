@@ -154,10 +154,12 @@ def template(*args, **kwargs):
 class CustomCreate(startproject.Command):
 
     def run(self, props, spider_name):
-        class_name = "".join(re.findall(r"(\w+)", spider_name.replace("-", "_"))).capitalize()
-        if class_name[0].isdigit():
-            print("Class name cannot start with digit, move is to the end. ")
-            class_name = re.sub(r"(\d+)(\w+)", "\g<2>\g<1>", class_name).capitalize()
+        words = re.findall(r"([A-Za-z0-9]+)", spider_name)
+        if words[0].isdigit() or (words[0] and words[0][0].isdigit()):
+            print("spider name cannot start with number!")
+            exit(1)
+        class_name = "".join(word.capitalize() for word in words)
+
         templates_dir = [join(dirname(self.templates_dir), "spider")]
         current_dir = os.getcwd()
         entities = ["spider", "item"]
