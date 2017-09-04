@@ -28,7 +28,7 @@ class DoubanSpider(StructureSpider):
     @enrich_wrapper
     def enrich_data(self, item_loader, response):
         self.logger.debug("Start to enrich_data. ")
-        item_loader.add_value("product_id", response.url, re=r"subject/(\d+)/")
+        item_loader.add_value("id", response.url, re=r"subject/(\d+)/")
         item_loader.add_xpath("title", '//h1/span/text()')
         item_loader.add_xpath("info", '//div[@id="info"]')
         item_loader.add_xpath("score", '//strong[@class="ll rating_num"]/text()')

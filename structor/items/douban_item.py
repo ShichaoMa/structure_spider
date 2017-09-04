@@ -18,7 +18,7 @@ from ..spiders.utils import format_html_string, TakeAll
 
 
 class FilmItem(BaseItem):
-    product_id = Field()
+    id = Field()
     title = Field()
     info = Field(input_processor=MapCompose(format_html_string))
     score = Field()

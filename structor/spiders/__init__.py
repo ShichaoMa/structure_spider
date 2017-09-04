@@ -135,8 +135,8 @@ class StructureSpider(Spider):
             break
 
     def process_forward(self, response, item):
-        self.logger.info("crawlid:%s, product_id: %s, %s requests send for successful yield item" % (
-            item.get("crawlid"), item.get("product_id", "unknow"), response.meta.get("request_count_per_item", 1)))
+        self.logger.info("crawlid:%s, id: %s, %s requests send for successful yield item" % (
+            item.get("crawlid"), item.get("id", "unknow"), response.meta.get("request_count_per_item", 1)))
         self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
         return item
 
