@@ -26,7 +26,8 @@ DEFAULT_REQUEST_HEADERS = {
     b'Accept-Encoding': b'deflate, gzip'
 }
 
-
+# 测试环境下如果没有安装redis可以使用简单redis
+CUSTOM_REDIS = True
 
 # 自带了一些user_agents，推荐不改
 USER_AGENT_LIST = pkgutil.get_data('structor', 'user_agents.list')

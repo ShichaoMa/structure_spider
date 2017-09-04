@@ -3,7 +3,7 @@ from .redis_feed import RedisFeed
 from .check_status import main
 from .start_project import start as start_project, create as create_spider
 
-VERSION = '0.9.0'
+VERSION = '0.9.2'
 
 AUTHOR = "cn"
 

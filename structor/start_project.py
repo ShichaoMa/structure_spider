@@ -38,6 +38,7 @@ class CustomStart(startproject.Command):
         print("    %s\n" % abspath(project_dir))
         print("You can start the spider with:")
         print("    cd %s" % project_dir)
+        print("    custom-redis-server -ll INFO -lf")
         print("    scrapy crawl douban")
 
 
@@ -181,7 +182,7 @@ def create():
     cmd.settings = {}
     cmd.settings["TEMPLATES_DIR"] = join(abspath(dirname(__file__)), "templates")
     parser = ArgumentParser()
-    parser.add_argument("-s", "--spider", help="spider name")
+    parser.add_argument("-s", "--spider", required=True, help="spider name")
     parser.add_argument("props", nargs="+", help="prop names")
     args = parser.parse_args()
     cmd.run(args.props, args.spider)

@@ -3,11 +3,11 @@ import sys
 import pickle
 import argparse
 import traceback
-from redis import RedisError, Redis
+
 
 class RedisFeed(object):
 
-    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host):
+    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host, custom):
 
         self.name = "redis_feed"
         self.crawlid = crawlid
@@ -17,8 +17,15 @@ class RedisFeed(object):
         self.priority = priority
         self.port = port
         self.host = host
+        self.custom = custom
         self.inc = 0
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
+
+        if self.custom:
+            from custom_redis.client import Redis
+        else:
+            from redis import Redis
+
         self.redis_conn = Redis(host=self.host, port=self.port)
         self.clean_previous_task(self.crawlid)
 
@@ -33,6 +40,7 @@ class RedisFeed(object):
         parser.add_argument('-c', '--crawlid', required=True, type=str, help="An unique Id for a crawl task. ")
         parser.add_argument('-s', '--spiderid', required=True, type=str, help="The website you wanna crawl. ")
         parser.add_argument('-p', '--priority', type=int, default=100, help="Feed in the task queue with priority. ")
+        parser.add_argument('--custom', action="store_true", help="Use the custom redis whether or not. ")
         return cls(**vars(parser.parse_args()))
 
     def clean_previous_task(self, crawlid):
@@ -82,6 +90,10 @@ class RedisFeed(object):
         return "{sid}:item:queue".format(sid=self.spiderid)
 
     def feed(self, queue_name, req):
+        if self.custom:
+            from custom_redis.client.errors import RedisError
+        else:
+            from redis import RedisError
         try:
             self.redis_conn.zadd(queue_name, req, -self.priority)
             return 0
