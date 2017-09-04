@@ -1,7 +1,7 @@
 # USAGE
 ### 安装structure_spider
 ```
-dev@ubuntu:~$ pip install structure_spider==0.9.2
+dev@ubuntu:~$ pip install structure_spider==0.9.3
 ```
 ### 生成项目
 ```

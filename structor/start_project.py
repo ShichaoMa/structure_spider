@@ -38,7 +38,7 @@ class CustomStart(startproject.Command):
         print("    %s\n" % abspath(project_dir))
         print("You can start the spider with:")
         print("    cd %s" % project_dir)
-        print("    custom-redis-server -ll INFO -lf")
+        print("    custom-redis-server -ll INFO -lf &")
         print("    scrapy crawl douban")
 
 
@@ -158,7 +158,7 @@ class CustomCreate(startproject.Command):
         if class_name[0].isdigit():
             print("Class name cannot start with digit, move is to the end. ")
             class_name = re.sub(r"(\d+)(\w+)", "\g<2>\g<1>", class_name).capitalize()
-        templates_dir = [join(self.templates_dir, "spider")]
+        templates_dir = [join(dirname(self.templates_dir), "spider")]
         current_dir = os.getcwd()
         entities = ["spider", "item"]
 
@@ -174,7 +174,7 @@ class CustomCreate(startproject.Command):
         for entity in entities:
             render(entity)
 
-        print("%sSpdier and %sItem have created. "%(class_name, class_name))
+        print("%sSpdier and %sItem have been created. "%(class_name, class_name))
 
 
 def create():
