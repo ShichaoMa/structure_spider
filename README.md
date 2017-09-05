@@ -38,5 +38,8 @@ dev@ubuntu:~/myapp/myapp$ scrapy crawl taobao
 dev@ubuntu:~/myapp$ feed -s taobao -c test -uf myapp/text.txt --custom # --custom代表使用的是简单redis
 ```
 
+更多资源:
+
+[[structure_spider每周一练]：一键下载百度mp3](https://zhuanlan.zhihu.com/p/29076630)
 
 
