@@ -10,10 +10,19 @@ item的建立
   4）order：对prop进行排序，有些prop依赖于之前的prop，这种情况下，对这两个属性进行排序是有必要的，默认order=0。
   5）skip: 是否在item中略过此prop，默认skip=False。
 """
+from functools import partial
 from scrapy import Item, Field
+from scrapy.loader.processors import MapCompose
+
 from structor.items import BaseItem
+from structor.spiders.utils import TakeAll, rid
 
 
-class {{class_name}}Item(BaseItem):
-{% for prop in props %}    {{prop}} = Field()
-{% endfor %}
+class BaiduMp3Item(BaseItem):
+    id = Field()
+    name = Field()
+    singer = Field()
+    album = Field()
+    lyrics = Field()
+    source_url = Field(input_processor=MapCompose(partial(rid, old="\\", new="")))
+    tags = Field(output_processor=TakeAll())

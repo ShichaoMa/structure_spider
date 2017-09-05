@@ -20,7 +20,7 @@ from logging import handlers
 from collections import OrderedDict, defaultdict
 from functools import wraps, reduce
 from pythonjsonlogger.jsonlogger import JsonFormatter
-from urllib.parse import urlparse, urlunparse, urlencode, urljoin
+from urllib.parse import urlparse, urlunparse, urlencode
 
 from scrapy import Selector, Item
 from scrapy.http import Request

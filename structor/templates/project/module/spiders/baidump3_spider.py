@@ -23,8 +23,8 @@ import random
 from scrapy import Selector
 
 from urllib.parse import urlencode, urlparse
-from . import StructureSpider
-from .utils import CustomLoader, enrich_wrapper, urldecode, re_search, safely_json_loads
+from structor.spiders import StructureSpider
+from structor.spiders.utils import CustomLoader, enrich_wrapper, urldecode, re_search, safely_json_loads
 from ..items.baidump3_item import BaiduMp3Item
 
 

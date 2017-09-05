@@ -5,7 +5,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '0.9.5'
+VERSION = '0.9.10'
 
 AUTHOR = "cn"
 
@@ -53,7 +53,8 @@ setup(
     url = URL,
     license = LICENSE,
     packages = PACKAGES,
-    install_requires=["scrapy", "psutil", "python-json-logger>=0.1.2", "redis", "jinja2", "custom-redis>=3.1.2"],
+    install_requires=["parsel>=1.2.0", "scrapy>=1.4.0", "psutil", "python-json-logger>=0.1.2",
+                      "redis", "jinja2", "custom-redis>=3.1.2"],
     include_package_data=True,
     zip_safe=True,
 )

@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import json
 
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from scrapy.signals import spider_closed
 
 from .spiders.utils import Logger, ItemEncoder, re_search
@@ -38,7 +38,9 @@ class Mp3DownloadPipeline(BasePipeline):
         self.downloader = requests.Session()
 
     def download(self, url, name):
-        with open(name, "wb") as f:
+        resp = self.downloader.get(url, stream=True)
+        filename = unquote(re_search(r'filename="(.*?)"(?:;|$)', resp.headers.get("Content-Disposition", ""))) or name
+        with open(filename, "wb") as f:
             for chunk in self.downloader.get(url, stream=True).iter_content(chunk_size=1024):
                 f.write(chunk)
 

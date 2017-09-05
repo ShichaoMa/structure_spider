@@ -19,7 +19,6 @@ from ..spiders.utils import TakeAll, rid
 
 
 class BaiduMp3Item(BaseItem):
-    
     id = Field()
     name = Field()
     singer = Field()

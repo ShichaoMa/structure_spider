@@ -23,11 +23,13 @@ class StructureSpider(Spider):
     item_pattern = tuple()
     page_pattern = tuple()
     log = LoggerDescriptor()
-    page_url = None
 
     def __init__(self, *args, **kwargs):
         Spider.__init__(self, *args, **kwargs)
         self.redis_conn = None
+
+    def page_url(self, response):
+        return response.url
 
     @property
     def logger(self):
@@ -62,10 +64,7 @@ class StructureSpider(Spider):
 
     def extract_page_urls(self, response, effective_urls):
         xpath = "|".join(self.page_pattern)
-        if self.page_url:
-            page_url = self.page_url(response)
-        else:
-            page_url = response.url
+        page_url = self.page_url(response)
         if xpath.count("?") == 1:
             next_page_urls = [url_arg_increment(xpath, page_url)] if len(effective_urls) else []
         elif xpath.count("subpath="):

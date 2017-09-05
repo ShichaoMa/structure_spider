@@ -18,7 +18,7 @@ spider编写规则
 from w3lib.html import replace_entities
 from structor.spiders import StructureSpider
 from structor.spiders.utils import xpath_exchange, CustomLoader, re_search, safely_json_loads, enrich_wrapper
-from structor.items.douban_item import FilmItem, QuestionItem, AnswerItem, ReviewItem
+from ..items.douban_item import FilmItem, QuestionItem, AnswerItem, ReviewItem
 
 
 class DoubanSpider(StructureSpider):
