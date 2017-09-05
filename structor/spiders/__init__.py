@@ -19,11 +19,11 @@ from .utils import LoggerDescriptor, url_arg_increment, url_item_arg_increment, 
 class StructureSpider(Spider):
 
     name = "structure"
-    have_duplicate = False
+    need_duplicate = False
     item_pattern = tuple()
     page_pattern = tuple()
     log = LoggerDescriptor()
-    refresh_page_urls = None
+    page_url = None
 
     def __init__(self, *args, **kwargs):
         Spider.__init__(self, *args, **kwargs)
@@ -62,8 +62,8 @@ class StructureSpider(Spider):
 
     def extract_page_urls(self, response, effective_urls):
         xpath = "|".join(self.page_pattern)
-        if self.refresh_page_urls:
-            page_url = self.refresh_page_urls(response)
+        if self.page_url:
+            page_url = self.page_url(response)
         else:
             page_url = response.url
         if xpath.count("?") == 1:
@@ -108,6 +108,7 @@ class StructureSpider(Spider):
     def get_base_loader(response):
         pass
 
+    @enrich_wrapper
     def enrich_data(self, item_loader, response):
         pass
 
@@ -119,8 +120,8 @@ class StructureSpider(Spider):
         # 增加这个字段的目的是为了记住去重后的url有多少个，如果为空，对于按参数翻页的网站，有可能已经翻到了最后一页。
         effective_urls = []
         for item_url in item_urls:
-            if self.have_duplicate:
-                if self.duplicate_filter(response, item_url, self.have_duplicate):
+            if self.need_duplicate:
+                if self.duplicate_filter(response, item_url, self.need_duplicate):
                     continue
             response.meta["url"] = item_url
             self.crawler.stats.inc_total_pages(response.meta['crawlid'])

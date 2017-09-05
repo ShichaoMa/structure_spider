@@ -50,26 +50,42 @@ class TakeFirst(object):
         return return_value
 
 
-def refresh_prop(func=lambda x: x, interval=30):
+def refresh(interval=30):
     """
-    每隔interval调用一次函数
+    使用该装饰器装饰的函数，每隔interval秒调用一次。
     :param args:
     :param func:
     :param interval:
     :return:
     """
-    value = None
-    last_time = 0
+    def out_wrapper(func=lambda x: x):
+        value = None
+        last_time = 0
 
-    def wrapper(*args):
-        nonlocal value, last_time
+        @wraps(func)
+        def wrapper(*args):
+            nonlocal value, last_time
 
-        if time.time() - last_time > interval:
-            value = func(*args)
-            last_time = time.time()
-        return value
+            if time.time() - last_time > interval:
+                value = func(*args)
+                last_time = time.time()
+            return value
 
-    return wrapper
+        return wrapper
+    return out_wrapper
+
+
+def duplicate(iterable):
+    """
+    保序去重
+    :param iterable:
+    :return:
+    """
+    result = list()
+    for i in iterable:
+        if i not in result:
+            result.append(i)
+    return result
 
 
 def strip(value, chars=None):
@@ -104,14 +120,14 @@ def encode(value, encoding="utf-8"):
     return value.encode(encoding)
 
 
-def rid(value, repl):
+def rid(value, old, new):
     """
     去掉指定字段
     :param value:
     :param repl: 去掉的字段
     :return:
     """
-    value.replace(repl, "")
+    return value.replace(old, new)
 
 
 def xpath_exchange(x):
@@ -833,25 +849,26 @@ def url_arg_increment(arg_pattern, url):
         return "%s%s%s" % (url, midfix, first_next_page_index + 1)
 
 
-def url_item_arg_increment(index, url, count):
+def url_item_arg_increment(partten, url, count):
     """
-    对于使用url arguments标志item的index而实现分页的url，使用这个函数生成下一页url
-    @param index: start 用来指定index的相应字段
+    对于使用url arguments标志item的partten而实现分页的url，使用这个函数生成下一页url
+    @param partten: `keyword`=`begin_num`(eg: start=0)用来指定partten的相应字段
     @param url: http://www.ecco.com/abc?start=30
     @param count:  30当前页item的数量
     @return: http://www.ecco.com/abc?start=60
     """
-    mth = re.search(r"%s=(\d+)"%index, url)
+    keyword, begin_num = partten.split("=")
+    mth = re.search(r"%s=(\d+)"%keyword, url)
     if mth:
         start = int(mth.group(1))
     else:
-        start = 1
+        start = int(begin_num)
     parts = urlparse(url)
     if parts.query:
         query = dict(x.split("=") for x in parts.query.split("&"))
-        query[index] = start + count
+        query[keyword] = start + count
     else:
-        query = {index:count+1}
+        query = {keyword: count+1}
     return urlunparse(parts._replace(query=urlencode(query)))
 
 

@@ -87,7 +87,7 @@ class RedisFeed(object):
         print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(success_rate, failed_rate))
 
     def get_name(self):
-        return "{sid}:item:queue".format(sid=self.spiderid)
+        return "{sid}:request:queue".format(sid=self.spiderid)
 
     def feed(self, queue_name, req):
         if self.custom:

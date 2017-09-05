@@ -1,9 +1,10 @@
 # -*- coding:utf-8 -*-
 import json
 
+from urllib.parse import urlparse
 from scrapy.signals import spider_closed
 
-from .spiders.utils import Logger, ItemEncoder
+from .spiders.utils import Logger, ItemEncoder, re_search
 
 
 class BasePipeline(object):
@@ -26,6 +27,23 @@ class FilePipeline(BasePipeline):
 
     def process_item(self, item, spider):
         open("test.json", "w").write(json.dumps(item, cls=ItemEncoder))
+        return item
+
+
+class Mp3DownloadPipeline(BasePipeline):
+
+    def __init__(self, settings):
+        super(Mp3DownloadPipeline, self).__init__(settings)
+        import requests
+        self.downloader = requests.Session()
+
+    def download(self, url, name):
+        with open(name, "wb") as f:
+            for chunk in self.downloader.get(url, stream=True).iter_content(chunk_size=1024):
+                f.write(chunk)
+
+    def process_item(self, item, spider):
+        self.download(item["source_url"], "%s.mp3"%item["name"])
         return item
 
 

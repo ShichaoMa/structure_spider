@@ -19,7 +19,7 @@ class Scheduler(object):
 
         self.settings = crawler.settings
         self.logger = Logger.from_crawler(crawler)
-        if self.settings.get("CUSTOM_REDIS"):
+        if self.settings.getbool("CUSTOM_REDIS"):
             from custom_redis.client import Redis
         else:
             from redis import Redis
@@ -80,7 +80,7 @@ class Scheduler(object):
             item = None
             if time.time() - self.request_interval < self.last_acs_time:
                 return item
-            if self.settings.get("CUSTOM_REDIS"):
+            if self.settings.getbool("CUSTOM_REDIS"):
                 item = self.redis_conn.zpop(queue)
             else:
                 pipe = self.redis_conn.pipeline()
