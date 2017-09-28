@@ -44,8 +44,9 @@ class StructureSpider(Spider):
         self.redis_conn = redis_conn
 
     def spider_idle(self):
-        print('Don\'t close spider......')
-        raise DontCloseSpider
+        if self.settings.getbool("IDLE", True):
+            print('Don\'t close spider......')
+            raise DontCloseSpider
 
     def extract_item_urls(self, response):
         return [response.urljoin(x) for x in set(response.xpath("|".join(self.item_pattern)).extract())]
@@ -62,7 +63,7 @@ class StructureSpider(Spider):
         response.meta["callback"] = "parse_item"
         response.meta["priority"] -= 20
 
-    def extract_page_urls(self, response, effective_urls):
+    def extract_page_urls(self, response, effective_urls, item_urls):
         xpath = "|".join(self.page_pattern)
         page_url = self.page_url(response)
         if xpath.count("?") == 1:
@@ -72,7 +73,7 @@ class StructureSpider(Spider):
         elif xpath.count("/") > 1:
             next_page_urls = [urljoin(page_url, x) for x in set(response.xpath(xpath).extract())]
         else:
-            next_page_urls = [url_item_arg_increment(xpath, page_url, len(effective_urls))] if len(effective_urls) else []
+            next_page_urls = [url_item_arg_increment(xpath, page_url, len(item_urls))] if len(effective_urls) else []
 
         response.meta["if_next_page"] = True
         response.meta["callback"] = "parse"
@@ -130,7 +131,7 @@ class StructureSpider(Spider):
                           meta=response.meta,
                           errback=self.errback)
 
-        for next_page_url in self.extract_page_urls(response, effective_urls) or []:
+        for next_page_url in self.extract_page_urls(response, effective_urls, item_urls) or []:
             response.meta["url"] = next_page_url
             yield Request(url=next_page_url,
                           callback=self.parse,

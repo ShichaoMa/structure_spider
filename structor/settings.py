@@ -14,6 +14,8 @@ import pkgutil
 REDIS_HOST = os.environ.get("REDIS_HOST", '127.0.0.1')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 
+IDLE = eval(os.environ.get("IDLE", "True"))
+
 RETRY_HTTP_CODES = [500, 502, 503, 504, 400, 408, 403, 304]
 
 CONCURRENT_REQUESTS = int(os.environ.get('CONCURRENT_REQUESTS', 1))

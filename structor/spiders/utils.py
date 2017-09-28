@@ -75,16 +75,18 @@ def refresh(interval=30):
     return out_wrapper
 
 
-def duplicate(iterable):
+def duplicate(iterable, key=lambda x: x):
     """
     保序去重
     :param iterable:
+    :param key:
     :return:
     """
     result = list()
     for i in iterable:
-        if i not in result:
-            result.append(i)
+        keep = key(i)
+        if keep not in result:
+            result.append(keep)
     return result
 
 
@@ -124,7 +126,8 @@ def rid(value, old, new):
     """
     去掉指定字段
     :param value:
-    :param repl: 去掉的字段
+    :param old:
+    :param new:
     :return:
     """
     return value.replace(old, new)
@@ -264,11 +267,12 @@ def re_search(re_str, text, dotall=True):
         re_str = [re_str]
 
     for rex in re_str:
-
+        if isinstance(rex, str):
+            rex = re.compile(rex)
         if dotall:
-            match_obj = re.search(rex, text, re.DOTALL)
+            match_obj = rex.search(text, re.DOTALL)
         else:
-            match_obj = re.search(rex, text)
+            match_obj = rex.search(text)
 
         if match_obj is not None:
             t = match_obj.group(1).replace('\n', '')
@@ -319,6 +323,17 @@ class P22P3Encoder(json.JSONEncoder):
             return obj.decode("utf-8")
         if isinstance(obj, (types.GeneratorType, map, filter)):
             return list(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+class ItemEncoder(json.JSONEncoder):
+    """
+    将Item转换成字典
+    """
+    def default(self, obj):
+        if isinstance(obj, Item):
+            return dict(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 

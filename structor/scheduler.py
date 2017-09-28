@@ -25,7 +25,7 @@ class Scheduler(object):
             from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.get("REDIS_PORT"))
-        self.queue_name = "%s:*:queue"
+        self.queue_name = "%s:item:queue"
         self.queues = {}
         self.request_interval = 60/self.settings.getint("SPEED", 60)
         self.last_acs_time = time.time()
@@ -52,17 +52,17 @@ class Scheduler(object):
             'meta': request.meta,
             '_encoding': request._encoding,
             'dont_filter': request.dont_filter,
-            'callback': request.callback if not isinstance(request.callback, types.MethodType) else request.callback.__name__,
-            'errback': request.errback if not isinstance(request.errback, types.MethodType) else request.errback.__name__,
+            'callback': request.callback if not isinstance(
+                request.callback, types.MethodType) else request.callback.__name__,
+            'errback': request.errback if not isinstance(
+                request.errback, types.MethodType) else request.errback.__name__,
         }
         return req_dict
 
     @enqueue_request_method_wrapper
     def enqueue_request(self, request):
-
         req_dict = self.request_to_dict(request)
-        key = "{sid}:item:queue".format(sid=req_dict['meta']['spiderid'])
-        self.redis_conn.zadd(key, pickle.dumps(req_dict), -int(req_dict["meta"]["priority"]))
+        self.redis_conn.zadd(self.queue_name, pickle.dumps(req_dict), -int(req_dict["meta"]["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
@@ -70,81 +70,85 @@ class Scheduler(object):
     @next_request_method_wrapper
     def next_request(self):
 
-        queues = self.redis_conn.keys(self.queue_name)
+        self.logger.info("length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
+        item = None
+        if time.time() - self.request_interval < self.last_acs_time:
+            return item
+        if self.settings.getbool("CUSTOM_REDIS"):
+            item = self.redis_conn.zpop(self.queue_name)
+        else:
+            pipe = self.redis_conn.pipeline()
+            pipe.multi()
+            pipe.zrange(self.queue_name, 0, 0).zremrangebyrank(self.queue_name, 0, 0)
+            result, count = pipe.execute()
 
-        if queues:
-            queue = random.choice(queues)
-            self.logger.info("length of queue %s is %s" %
-                             (queue, self.redis_conn.zcard(queue)))
+            if result:
+                item = result[0]
 
-            item = None
-            if time.time() - self.request_interval < self.last_acs_time:
-                return item
-            if self.settings.getbool("CUSTOM_REDIS"):
-                item = self.redis_conn.zpop(queue)
+        if item:
+            self.last_acs_time = time.time()
+            item = pickle.loads(item)
+            self.present_item = item
+            headers = item.get("headers", {})
+            body = item.get("body")
+            if item.get("method"):
+                method = item.get("method")
             else:
-                pipe = self.redis_conn.pipeline()
-                pipe.multi()
-                pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
-                result, count = pipe.execute()
+                method = "GET"
 
-                if result:
-                    item = result[0]
+            try:
+                req = Request(item['url'], method=method, body=body, headers=headers)
+            except ValueError:
+                req = Request('http://' + item['url'], method=method, body=body, headers=headers)
 
-            if item:
-                self.last_acs_time = time.time()
-                item = pickle.loads(item)
-                self.present_item = item
-                headers = item.get("headers", {})
-                body = item.get("body")
-                if item.get("method"):
-                    method = item.get("method")
-                else:
-                    method = "GET"
+            if 'callback' in item:
+                cb = item['callback']
+                if cb and self.spider:
+                    cb = getattr(self.spider, cb)
+                    req.callback = cb
 
-                try:
-                    req = Request(item['url'], method=method, body=body, headers=headers)
-                except ValueError:
-                    req = Request('http://' + item['url'], method=method, body=body, headers=headers)
+            if 'errback' in item:
+                eb = item['errback']
+                if eb and self.spider:
+                    eb = getattr(self.spider, eb)
+                    req.errback = eb
 
-                if 'callback' in item:
-                    cb = item['callback']
-                    if cb and self.spider:
-                        cb = getattr(self.spider, cb)
-                        req.callback = cb
+            if 'meta' in item:
+                item = item['meta']
 
-                if 'errback' in item:
-                    eb = item['errback']
-                    if eb and self.spider:
-                        eb = getattr(self.spider, eb)
-                        req.errback = eb
+            # defaults not in schema
+            if 'curdepth' not in item:
+                item['curdepth'] = 0
 
-                if 'meta' in item:
-                    item = item['meta']
+            if "retry_times" not in item:
+                item['retry_times'] = 0
 
-                # defaults not in schema
-                if 'curdepth' not in item:
-                    item['curdepth'] = 0
+            for key in item.keys():
+                req.meta[key] = item[key]
 
-                if "retry_times" not in item:
-                    item['retry_times'] = 0
+            if 'useragent' in item and item['useragent'] is not None:
+                req.headers['User-Agent'] = item['useragent']
 
-                for key in item.keys():
-                    req.meta[key] = item[key]
+            if 'cookie' in item and item['cookie'] is not None:
+                if isinstance(item['cookie'], dict):
+                    req.cookies = item['cookie']
+                elif isinstance(item['cookie'], (str, bytes)):
+                    req.cookies = parse_cookie(item['cookie'])
 
-                if 'useragent' in item and item['useragent'] is not None:
-                    req.headers['User-Agent'] = item['useragent']
-
-                if 'cookie' in item and item['cookie'] is not None:
-                    if isinstance(item['cookie'], dict):
-                        req.cookies = item['cookie']
-                    elif isinstance(item['cookie'], (str, bytes)):
-                        req.cookies = parse_cookie(item['cookie'])
-
-                return req
+            return req
 
     def close(self, reason):
         self.logger.info("Closing Spider", {'spiderid': self.spider.name})
 
     def has_pending_requests(self):
         return False
+
+
+class SingleTaskScheduler(Scheduler):
+
+    def __init__(self, crawler):
+        super(SingleTaskScheduler, self).__init__(crawler)
+        self.queue_name = "%s:single:queue"
+
+    def has_pending_requests(self):
+        return self.redis_conn.zcard(self.queue_name) > 0

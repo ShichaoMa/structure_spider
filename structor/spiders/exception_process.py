@@ -17,8 +17,7 @@ def stats_wrapper(func):
         try:
             return func(*args, **kwds)
         except Exception:
-            traceback.print_exc()
-
+            pass
     return wrapper_method
 
 
