@@ -28,6 +28,7 @@ TaobaoSpdier and TaobaoItem have been created.
 dev@ubuntu:~/myapp/myapp$
 ```
 ### 为爬虫编写规则
+请看wiki
 参考资料：[使用structure_spider多请求组合抓取结构化数据](https://zhuanlan.zhihu.com/p/28636195)
 ### 启动爬虫
 ```
