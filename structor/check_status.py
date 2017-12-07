@@ -8,17 +8,17 @@ from redis import Redis
 def format(d, f=False):
     for k, v in d.items():
         if f:
-            print("reason --> %s"%v.ljust(30))
-            print("url    --> %s"%k.ljust(30))
+            print("reason --> %s"%v.decode().ljust(30))
+            print("url    --> %s"%k.decode().ljust(30))
         else:
-            print("%s -->  %s"%(k.ljust(30), v))
+            print("%s -->  %s"%(k.decode().ljust(30), v.decode()))
 
 
 def start(crawlid, host, port):
     redis_conn = Redis(host, port)
     key = "crawlid:%s"%crawlid
     data = redis_conn.hgetall(key)
-    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x, "failed_download_*")]
+    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x.decode(), "failed_download_*")]
     format(data)
     for fk in failed_keys:
         print_if = input("show the %s? y/n default n:"%fk.replace("_", " "))

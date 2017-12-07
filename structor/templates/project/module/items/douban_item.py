@@ -12,9 +12,10 @@ item的建立
 """
 from scrapy import Item, Field
 from scrapy.loader.processors import MapCompose
+from toolkit import format_html_string
 
 from structor.items import BaseItem
-from structor.spiders.utils import format_html_string, TakeAll
+from structor.utils import TakeAll
 
 
 class FilmItem(BaseItem):

@@ -4,7 +4,7 @@ spider编写规则
 1 spider必须继承自StructureSpider
 2 若执行分类抓取则需要配置item_pattern = (), page_pattern = ()，其中：
     1）item_pattern元组中的元素为分类页中每个item链接所对应的xpath表达式
-    2）page_pattern元组中的元素可以是下一页链接所所对应的正则表达式，或者其它规则，详见https://github.com/ShichaoMa/webWalker/wiki/%E9%80%9A%E7%94%A8%E6%8A%93%E5%8F%96%E9%85%8D%E7%BD%AE%E6%96%B9%E6%B3%95
+    2）page_pattern元组中的元素可以是下一页链接所所对应的正则表达式，或者其它规则，详见https://github.com/ShichaoMa/structure_spider/wiki/%08page_partten%E5%92%8Citem_partten%E7%BC%96%E5%86%99%E8%A7%84%E5%88%99
 3 提供get_base_loader静态方法，传入response，返回CustomLoader对应一个Item
 4 提供enrich_data方法，必须被enrich_wrapper装饰，其中：
     1）传入item_loader, response，使用item_loader的方法(add_value, add_xpath, add_re)添加要抓取的属性名及其对应表达式或值。
@@ -16,14 +16,22 @@ spider编写规则
 4 下次请求所回调的enrich函数名称为 enrich_`prop`
 """
 from w3lib.html import replace_entities
+from toolkit import re_search, safely_json_loads
+
 from structor.spiders import StructureSpider
-from structor.spiders.utils import xpath_exchange, CustomLoader, re_search, safely_json_loads, enrich_wrapper
+from structor.utils import xpath_exchange, CustomLoader, enrich_wrapper
+
 from ..items.douban_item import FilmItem, QuestionItem, AnswerItem, ReviewItem
 
 
 class DoubanSpider(StructureSpider):
     name = "douban"
-
+    custom_settings = {
+        "ITEM_PIPELINES": {
+            "structor.pipelines.FilePipeline": 100,
+            # "structor.pipelines.FilePipeline": 101,
+        }
+    }
     @staticmethod
     def get_base_loader(response):
         return CustomLoader(item=FilmItem())

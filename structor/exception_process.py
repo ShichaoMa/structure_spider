@@ -4,10 +4,9 @@ from functools import wraps
 
 from scrapy.exceptions import IgnoreRequest
 
-from .utils import get_ip_address
+from toolkit import get_ip
 
-
-IP = get_ip_address()
+IP = get_ip()
 
 
 def stats_wrapper(func):

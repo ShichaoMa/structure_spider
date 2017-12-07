@@ -11,11 +11,13 @@ item的建立
   5）skip: 是否在item中略过此prop，默认skip=False。
 """
 from functools import partial
-from scrapy import Item, Field
+
+from scrapy import Field
 from scrapy.loader.processors import MapCompose
+from toolkit import rid
 
 from . import BaseItem
-from ..spiders.utils import TakeAll, rid
+from ..utils import TakeAll
 
 
 class BaiduMp3Item(BaseItem):

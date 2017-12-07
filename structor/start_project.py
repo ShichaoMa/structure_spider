@@ -2,11 +2,12 @@
 import re
 import os
 import string
-from argparse import ArgumentParser
+
 from shutil import move
-from os.path import exists, join, abspath, dirname
+from argparse import ArgumentParser
 from scrapy.commands import startproject
 from scrapy.utils.template import render_templatefile, string_camelcase
+from os.path import exists, join, abspath, dirname, isabs, isfile
 
 
 class CustomStart(startproject.Command):
@@ -62,7 +63,7 @@ class Jinja2Template(object):
         self.name = name
         self.source = source.read() if hasattr(source, 'read') else source
         self.filename = source.filename if hasattr(source, 'filename') else None
-        self.lookup = [os.path.abspath(x) for x in lookup]
+        self.lookup = [abspath(x) for x in lookup]
         self.encoding = encoding
         self.settings = self.settings.copy() # Copy from class variable
         self.settings.update(settings) # Apply
@@ -77,16 +78,16 @@ class Jinja2Template(object):
         if not lookup:
             lookup = ['.']
 
-        if os.path.isabs(name) and os.path.isfile(name):
-            return os.path.abspath(name)
+        if isabs(name) and isfile(name):
+            return abspath(name)
 
         for spath in lookup:
-            spath = os.path.abspath(spath) + os.sep
-            fname = os.path.abspath(os.path.join(spath, name))
+            spath = abspath(spath) + os.sep
+            fname = abspath(join(spath, name))
             if not fname.startswith(spath): continue
-            if os.path.isfile(fname): return fname
+            if isfile(fname): return fname
             for ext in cls.extensions:
-                if os.path.isfile('%s.%s' % (fname, ext)):
+                if isfile('%s.%s' % (fname, ext)):
                     return '%s.%s' % (fname, ext)
 
     @classmethod
@@ -201,5 +202,5 @@ def start():
 
 
 if __name__ == "__main__":
-   #start()
-   create()
+   start()
+   #create()

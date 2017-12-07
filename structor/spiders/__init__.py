@@ -6,13 +6,13 @@
 import time
 from urllib.parse import urlparse, urljoin
 
-from scrapy.spiders import Spider
 from scrapy import signals, Request
 from scrapy.exceptions import DontCloseSpider
+from scrapy.spiders import Spider
 from scrapy.utils.response import response_status_message
 
-from .exception_process import parse_method_wrapper
-from .utils import LoggerDescriptor, url_arg_increment, url_item_arg_increment, \
+from ..exception_process import parse_method_wrapper
+from ..utils import LoggerDescriptor, url_arg_increment, url_item_arg_increment, \
     url_path_arg_increment, enrich_wrapper, ItemCollector
 
 
@@ -20,6 +20,8 @@ class StructureSpider(Spider):
 
     name = "structure"
     need_duplicate = False
+    change_proxy = False
+    proxy = None
     item_pattern = tuple()
     page_pattern = tuple()
     log = LoggerDescriptor()

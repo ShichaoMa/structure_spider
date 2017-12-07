@@ -1,32 +1,35 @@
-    # -*- coding:utf-8 -*-
 import os
+import random
+import base64
 import traceback
 
 from w3lib.url import safe_url_string
 from urllib.parse import urljoin
 
-from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-    ConnectionRefusedError, ConnectionDone, ConnectError, \
-    ConnectionLost, TCPTimedOutError
-
 from scrapy import signals
-from scrapy.xlib.tx import ResponseFailed
-from scrapy.utils.response import response_status_message
-from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.utils.response import response_status_message
+from scrapy.xlib.tx import ResponseFailed
+from twisted.internet import defer
+from twisted.internet.error import TimeoutError, DNSLookupError, \
+    ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
+from scrapy.core.downloader.handlers.http11 import TunnelError
 
-from .spiders.exception_process import process_exception_method_wrapper, \
+from toolkit import parse_cookie
+
+from .utils import CustomLogger
+from .exception_process import process_exception_method_wrapper, \
     process_requset_method_wrapper, process_response_method_wrapper
-from .spiders.utils import Logger, parse_cookie, get_ip_address
 
 
 class DownloaderBaseMiddleware(object):
     def __init__(self, settings):
-        self.logger = Logger.from_crawler(self.crawler)
+        self.logger = CustomLogger.from_crawler(self.crawler)
         self.settings = settings
 
     @classmethod
@@ -34,6 +37,38 @@ class DownloaderBaseMiddleware(object):
         cls.crawler = crawler
         obj = cls(crawler.settings)
         return obj
+
+
+class ProxyMiddleware(DownloaderBaseMiddleware):
+
+    def __init__(self, settings):
+
+        super(ProxyMiddleware, self).__init__(settings)
+        self.proxy_sets = self.settings.get("PROXY_SETS", "proxy_set").split(",")
+
+    def choice(self):
+        try:
+            proxy = self.crawler.spider.redis_conn.srandmember(random.choice(self.proxy_sets))
+        except Exception:
+            proxy = None
+        return proxy and proxy.decode("utf-8")
+
+    @process_requset_method_wrapper
+    def process_request(self, request, spider):
+        if self.settings.get("CHANGE_PROXY", False) or spider.change_proxy:
+            spider.proxy = None
+            spider.change_proxy = False
+
+        if self.proxy_sets:
+                spider.proxy = spider.proxy or self.choice()
+
+        if spider.proxy:
+            proxy = "http://"+spider.proxy
+            request.meta['proxy'] = proxy
+            self.logger.debug("use proxy %s to send request"%proxy, extra={"rasp_proxy": proxy})
+            if self.settings.get("PROXY_ACCOUNT_PASSWORD"):
+                encoded_user_pass = base64.b64encode(self.settings.get("PROXY_ACCOUNT_PASSWORD").encode("utf-8"))
+                request.headers['Proxy-Authorization'] = b'Basic ' + encoded_user_pass
 
 
 class CustomUserAgentMiddleware(UserAgentMiddleware, DownloaderBaseMiddleware):
@@ -146,7 +181,7 @@ class CustomCookiesMiddleware(DownloaderBaseMiddleware, CookiesMiddleware):
             return
         self.logger.debug("process in CustomCookiesMiddleware. ")
         headers = self.settings.get("HEADERS", {}).get(spider.name, {}).copy()
-        cookiejarkey = request.meta.get("cookiejar", "default")
+        cookiejarkey = request.meta.get("cookiejar", spider.proxy)
         jar = self.jars[cookiejarkey]
         if not request.meta.get("dont_update_cookies"):
             request.cookies.update(parse_cookie(headers.get("Cookie", "")))
@@ -183,7 +218,7 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError, TypeError, ValueError)
+                           IOError, TypeError, ValueError, TunnelError)
 
     def __init__(self, settings):
         RetryMiddleware.__init__(self, settings)
@@ -216,7 +251,7 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
             raise IgnoreRequest("%s:%s unhandle error. " % (exception.__class__.__name__, exception))
 
     def _retry(self, request, reason, spider):
-
+        spider.change_proxy = True
         retries = request.meta.get('retry_times', 0) + 1
 
         if request.meta.get("if_next_page"):
@@ -236,9 +271,8 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
             self.logger.error(
-                "in %s retry request error to failed pages url:%s, exception:%s, meta:%s" % (get_ip_address(),
-                                                                                             request.url, reason,
-                                                                                             request.meta))
+                "retry request error to failed pages url:%s, exception:%s, meta:%s" % (
+                    request.url, reason, request.meta))
             self.logger.info("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
             raise IgnoreRequest("%s %s" % (reason, "retry %s times. "%retries))
 

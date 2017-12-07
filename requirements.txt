@@ -1,6 +1,5 @@
 scrapy
-redis
-psutil
-python-json-logger>=0.1.2
+toolkity
 jinja2
 custom-redis>=3.1.2
+parsel

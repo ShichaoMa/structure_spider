@@ -3,7 +3,7 @@ import time
 
 from scrapy.statscollectors import MemoryStatsCollector
 
-from .spiders.exception_process import stats_wrapper
+from .exception_process import stats_wrapper
 
 
 class StatsCollector(MemoryStatsCollector):
@@ -58,6 +58,3 @@ class StatsCollector(MemoryStatsCollector):
     def inc_crawled_pages(self, crawlid):
         self.redis_conn.hincrby("crawlid:%s" % crawlid, "crawled_pages", 1)
         self.update(crawlid)
-        # workerid=self.crawler.spider.worker_id
-        # self.redis_conn.hincrby("crawlid:%s:workerid:%s" % (crawlid, workerid), "crawled_pages", 1)
-        # self.redis_conn.expire("crawlid:%s:workerid:%s" % (crawlid, workerid), 60 * 60 * 24 * 2)

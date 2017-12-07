@@ -1,13 +1,13 @@
 # -*- coding:utf-8 -*-
+import pickle
 import time
 import types
-import pickle
-import random
 
 from scrapy.http.request import Request
+from toolkit import parse_cookie
 
-from .spiders.utils import Logger, parse_cookie
-from .spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
+from .exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
+from .utils import CustomLogger
 
 
 class Scheduler(object):
@@ -18,14 +18,14 @@ class Scheduler(object):
     def __init__(self, crawler):
 
         self.settings = crawler.settings
-        self.logger = Logger.from_crawler(crawler)
+        self.logger = CustomLogger.from_crawler(crawler)
         if self.settings.getbool("CUSTOM_REDIS"):
             from custom_redis.client import Redis
         else:
             from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
-                                self.settings.get("REDIS_PORT"))
-        self.queue_name = "%s:item:queue"
+                                self.settings.getint("REDIS_PORT"))
+        self.queue_name = "%s:request:queue"
         self.queues = {}
         self.request_interval = 60/self.settings.getint("SPEED", 60)
         self.last_acs_time = time.time()
