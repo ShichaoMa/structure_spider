@@ -105,7 +105,10 @@ class CustomLoader(ItemLoader):
             value = self.get_output_value(field_name)
             if field.get("skip"):
                 skip_fields.append(field_name)
-            item[field_name] = value or field.get("default", "")
+            if not (value or isinstance(value, type(field.get("default", "")))):
+                item[field_name] = field.get("default", "")
+            else:
+                item[field_name] = value
 
         for field in skip_fields:
             del item[field]
@@ -366,7 +369,7 @@ def url_item_arg_increment(partten, url, count):
         query = dict(x.split("=") for x in parts.query.split("&"))
         query[keyword] = start + count
     else:
-        query = {keyword: count+1}
+        query = {keyword: count+start}
     return urlunparse(parts._replace(query=urlencode(query)))
 
 
