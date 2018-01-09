@@ -84,15 +84,12 @@ class CustomLoader(ItemLoader):
         :param kwargs:
         :return:
         """
-        replace_entities = True
         regexs = arg_to_iter(regex)
-        while True:
+        for regex in regexs:
             try:
-                for regex in regexs:
-                    self.add_value(field_name, self.selector.re(regex, replace_entities), **kwargs)
-                break
+                self.add_value(field_name, self.selector.re(regex), **kwargs)
             except json.decoder.JSONDecodeError:
-                replace_entities = False
+                self.add_value(field_name, self.selector.re(regex, False), **kwargs)
 
     def load_item(self):
         """
@@ -127,7 +124,6 @@ def enrich_wrapper(func):
     :param func:
     :return:
     """
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         item_loader = args[1]
@@ -136,9 +132,7 @@ def enrich_wrapper(func):
         item_loader.selector = selector
         result = func(*args, **kwargs)
         item_loader.selector = None
-
         return result
-
     return wrapper
 
 
@@ -239,33 +233,13 @@ class ItemCollector(object):
                 return Request(meta=meta, callback="parse_next", errback="errback", **kw)
 
 
-def extras_wrapper(self, item):
-
-    def logger_func_wrapper(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if len(args) > 2:
-                extras = args[1]
-            else:
-                extras = kwargs.pop("extras", {})
-            extras = self.add_extras(extras, item)
-            return func(args[0], extra=extras)
-
-        return wrapper
-
-    return logger_func_wrapper
-
-
 class CustomLogger(Logger):
     """
     logger的实现
     """
-    logger = None
-
     @classmethod
     def from_crawler(cls, crawler):
-        return CustomLogger.logger or cls.init_logger(crawler.settings, crawler.spidercls.name)
+        return CustomLogger._instance or cls.init_logger(crawler.settings, crawler.spidercls.name)
 
     @classmethod
     def init_logger(cls, settings, name=None):
@@ -312,8 +286,10 @@ class LoggerDescriptor(object):
     def __get__(self, instance, cls):
         if not self.logger:
             self.logger = CustomLogger.from_crawler(instance.crawler)
-
         return self.logger
+
+    def __set__(self, instance, value):
+        raise ValueError("Readonly object. ")
 
     def __getattr__(self, item):
         raise AttributeError

@@ -16,7 +16,6 @@ class Scheduler(object):
     spider = None
 
     def __init__(self, crawler):
-
         self.settings = crawler.settings
         self.logger = CustomLogger.from_crawler(crawler)
         if self.settings.getbool("CUSTOM_REDIS"):
@@ -25,7 +24,7 @@ class Scheduler(object):
             from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.getint("REDIS_PORT"))
-        self.queue_name = "%s:request:queue"
+        self.queue_name = self.queue_name = self.settings.get("TASK_QUEUE_TEMPLATE", "%s:request:queue")
         self.queues = {}
         self.request_interval = 60/self.settings.getint("SPEED", 60)
         self.last_acs_time = time.time()
@@ -37,7 +36,7 @@ class Scheduler(object):
 
     def open(self, spider):
         self.spider = spider
-        self.queue_name = self.queue_name%spider.name
+        self.queue_name = self.queue_name % spider.name
         spider.set_redis(self.redis_conn)
 
     def request_to_dict(self, request):

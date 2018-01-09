@@ -86,6 +86,8 @@ NEWSPIDER_MODULE = 'structor.spiders'
 # Enables scheduling storing requests queue in redis.
 SCHEDULER = "structor.scheduler.Scheduler"
 
+TASK_QUEUE_TEMPLATE = "%s:request:queue"
+
 # 统计抓取信息
 STATS_CLASS = 'structor.stats_collectors.StatsCollector'
 
