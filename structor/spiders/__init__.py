@@ -6,7 +6,6 @@
 import time
 
 from functools import reduce
-from itertools import repeat
 from urllib.parse import urlparse, urljoin
 
 from scrapy import signals, Request
@@ -81,7 +80,7 @@ class StructureSpider(Spider):
         if len(effective_urls):
             if xpath.count("?") == 1:
                 next_page_url = url_arg_increment(xpath, page_url)
-            elif xpath.count("subpath="):
+            elif xpath.count("~="):
                 next_page_url = url_path_arg_increment(xpath, page_url)
             elif xpath.count("/") > 1:
                 next_page_url = reduce(
