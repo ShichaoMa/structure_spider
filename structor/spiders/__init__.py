@@ -139,9 +139,9 @@ class StructureSpider(Spider):
         yield from self.gen_requests(
             [dict(url=u, errback=self.errback) for u in effective_urls], self.parse_item, response)
 
-        nex_page_url = self.extract_page_url(response, effective_urls, item_urls)
-        if nex_page_url:
-            yield from self.gen_requests([nex_page_url], self.parse, response)
+        next_page_url = self.extract_page_url(response, effective_urls, item_urls)
+        if next_page_url:
+            yield from self.gen_requests([next_page_url], self.parse, response)
 
     def gen_requests(self, url_metas, callback, response):
         """
