@@ -57,7 +57,7 @@ REDIRECT_MAX_TIMES = int(os.environ.get('REDIRECT_MAX_TIMES', 20))
 REDIRECT_PRIORITY_ADJUST = int(os.environ.get('REDIRECT_PRIORITY_ADJUST', -1))
 
 # 最大请求速度n/min
-SPEED = 10
+SPEED = 1000
 
 # 日志配置
 SC_LOG_LEVEL = os.environ.get('SC_LOG_LEVEL', 'DEBUG')
@@ -95,10 +95,6 @@ STATS_CLASS = 'structor.stats_collectors.StatsCollector'
 # Store scraped item in redis for post-processing.
 ITEM_PIPELINES = {
     # 'structor.pipelines.MongoPipeline': 100,
-}
-
-SPIDER_MIDDLEWARES = {
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': None,
 }
 
 DOWNLOADER_MIDDLEWARES = {

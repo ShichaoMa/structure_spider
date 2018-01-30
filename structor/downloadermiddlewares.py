@@ -13,7 +13,7 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.response import response_status_message
-from scrapy.xlib.tx import ResponseFailed
+from twisted.web.client import ResponseFailed
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
     ConnectionRefusedError, ConnectionDone, ConnectError, \

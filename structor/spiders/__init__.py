@@ -4,6 +4,9 @@
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
 import time
+
+from functools import reduce
+from itertools import repeat
 from urllib.parse import urlparse, urljoin
 
 from scrapy import signals, Request
@@ -65,22 +68,33 @@ class StructureSpider(Spider):
         response.meta["callback"] = "parse_item"
         response.meta["priority"] -= 20
 
-    def extract_page_urls(self, response, effective_urls, item_urls):
+    def extract_page_url(self, response, effective_urls, item_urls):
+        """
+        返回下一页链接
+        :param response:
+        :param effective_urls: 当前页有效的item链接
+        :param item_urls: 当前页全部item链接
+        :return: 返回下一页链接或相关请求属性元组，如(url, callback, method...)
+        """
         xpath = "|".join(self.page_pattern)
         page_url = self.page_url(response)
-        if xpath.count("?") == 1:
-            next_page_urls = [url_arg_increment(xpath, page_url)] if len(effective_urls) else []
-        elif xpath.count("subpath="):
-            next_page_urls = [url_path_arg_increment(xpath, page_url)] if len(effective_urls) else []
-        elif xpath.count("/") > 1:
-            next_page_urls = [urljoin(page_url, x) for x in set(response.xpath(xpath).extract())]
+        if len(effective_urls):
+            if xpath.count("?") == 1:
+                next_page_url = url_arg_increment(xpath, page_url)
+            elif xpath.count("subpath="):
+                next_page_url = url_path_arg_increment(xpath, page_url)
+            elif xpath.count("/") > 1:
+                next_page_url = reduce(
+                    lambda x, y: y, (urljoin(page_url, x) for x in set(response.xpath(xpath).extract())), None)
+            else:
+                next_page_url = url_item_arg_increment(xpath, page_url, len(item_urls))
         else:
-            next_page_urls = [url_item_arg_increment(xpath, page_url, len(item_urls))] if len(effective_urls) else []
+            next_page_url = None
 
         response.meta["if_next_page"] = True
         response.meta["callback"] = "parse"
         response.meta["priority"] += 20
-        return next_page_urls
+        return next_page_url
 
     @enrich_wrapper
     def enrich_base_data(self, item_loader, response):
@@ -120,26 +134,35 @@ class StructureSpider(Spider):
         item_urls = self.extract_item_urls(response)
         self.adjust(response)
         # 增加这个字段的目的是为了记住去重后的url有多少个，如果为空，对于按参数翻页的网站，有可能已经翻到了最后一页。
-        effective_urls = []
-        for item_url in item_urls:
-            if self.need_duplicate:
-                if self.duplicate_filter(response, item_url, self.need_duplicate):
-                    continue
-            response.meta["url"] = item_url
-            self.crawler.stats.inc_total_pages(response.meta['crawlid'])
-            effective_urls.append(item_url)
-            yield Request(url=item_url,
-                          callback=self.parse_item,
-                          meta=response.meta,
-                          errback=self.errback)
+        effective_urls = [i for i in item_urls
+                          if not (self.need_duplicate and self.duplicate_filter(response, i, self.need_duplicate))]
+        self.crawler.stats.inc_total_pages(response.meta['crawlid'], len(effective_urls))
+        yield from self.gen_requests(
+            [dict(url=u, errback=self.errback) for u in effective_urls], self.parse_item, response)
 
-        for next_page_url in self.extract_page_urls(response, effective_urls, item_urls) or []:
-            response.meta["url"] = next_page_url
-            yield Request(url=next_page_url,
-                          callback=self.parse,
-                          meta=response.meta)
-            # next_page_url有且仅有一个，多出来的肯定是重复的
-            break
+        nex_page_url = self.extract_page_url(response, effective_urls, item_urls)
+        if nex_page_url:
+            yield from self.gen_requests([nex_page_url], self.parse, response)
+
+    def gen_requests(self, url_metas, callback, response):
+        """
+        生成requests
+        :param url_metas:可以是一个url， 或者(url, callback, method...)元组，顺序为Request参数顺序，
+        或者{"url": "...", "method": "GET"...}
+        :param callback: 可以统一指定callback
+        :param response:
+        :return:
+        """
+        for url_meta in url_metas:
+            if isinstance(url_meta, dict):
+                url_meta["callback"] = callback
+                response.meta["url"] = url_meta["url"]
+                yield Request(**url_meta, meta=response.meta)
+                continue
+            elif not isinstance(url_meta, list):
+                url_meta = [url_meta, callback]
+            response.meta["url"] = url_meta[0]
+            yield Request(*url_meta, meta=response.meta)
 
     def process_forward(self, response, item):
         self.logger.info("crawlid:%s, id: %s, %s requests send for successful yield item" % (

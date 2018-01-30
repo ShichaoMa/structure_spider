@@ -79,7 +79,7 @@ class Scheduler(object):
             pipe = self.redis_conn.pipeline()
             pipe.multi()
             pipe.zrange(self.queue_name, 0, 0).zremrangebyrank(self.queue_name, 0, 0)
-            result, count = pipe.execute()
+            result, _ = pipe.execute()
 
             if result:
                 item = result[0]

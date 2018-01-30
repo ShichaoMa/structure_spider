@@ -1,17 +1,14 @@
 # -*- coding:utf-8 -*-
-import os
 import re
-import sys
 import copy
 import json
 import logging
 
-from logging import handlers
 from collections import defaultdict
 from functools import wraps
 from urllib.parse import urlparse, urlunparse, urlencode
-from toolkit import strip, get_ip
-from toolkit.logger import UDPLogstashHandler, Logger
+from toolkit import strip
+from toolkit.logger import Logger
 
 from scrapy import Selector, Item
 from scrapy.http import Request
@@ -237,45 +234,25 @@ class CustomLogger(Logger):
     """
     logger的实现
     """
+
     @classmethod
     def from_crawler(cls, crawler):
-        return CustomLogger._instance or cls.init_logger(crawler.settings, crawler.spidercls.name)
+        return cls(crawler.settings, crawler.spidercls.name)
 
-    @classmethod
-    def init_logger(cls, settings, name=None):
-        json = settings.getbool('SC_LOG_JSON', True)
-        level = settings.get('SC_LOG_LEVEL', 'DEBUG')
-        stdout = settings.getbool('SC_LOG_STDOUT', True)
-        dir = settings.get('SC_LOG_DIR', 'logs')
-        bytes = settings.get('SC_LOG_MAX_BYTES', '10MB')
-        backups = settings.getint('SC_LOG_BACKUPS', 5)
-        udp_host = settings.get("SC_LOG_UDP_HOST", "127.0.0.1")
-        udp_port = settings.getint("SC_LOG_UDP_PORT", 5230)
-        file_out = settings.getbool('SC_LOG_FILE', False)
-        name = "%s_%s"%(name, get_ip())
-        logger = cls(name=name)
-        logger.logger.propagate = False
-        logger.json = json
-        logger.name = name
-        logger.format_string = '%(asctime)s [%(name)s]%(levelname)s: %(message)s'
-        root = logging.getLogger()
-        # 将的所有使用Logger模块生成的logger设置一样的logger level
-        for log in root.manager.loggerDict.keys():
-            root.getChild(log).setLevel(getattr(logging, level, 10))
-
-        if stdout:
-            logger.set_handler(logging.StreamHandler(sys.stdout))
-        elif file_out:
-            os.makedirs(dir, exist_ok=True)
-            file_handler = handlers.RotatingFileHandler(
-                os.path.join(dir, "%s.log" % name),
-                maxBytes=bytes,
-                backupCount=backups)
-            logger.set_handler(file_handler)
-        else:
-            logger.set_handler(UDPLogstashHandler(udp_host, udp_port))
-
-        return logger
+    def __init__(self, settings, name):
+        self.json = settings.getbool('SC_LOG_JSON', True)
+        self.level = settings.get('SC_LOG_LEVEL', 'DEBUG')
+        self.stdout = settings.getbool('SC_LOG_STDOUT', True)
+        self.dir = settings.get('SC_LOG_DIR', 'logs')
+        self.bytes = settings.get('SC_LOG_MAX_BYTES', '10MB')
+        self.backups = settings.getint('SC_LOG_BACKUPS', 5)
+        self.udp_host = settings.get("SC_LOG_UDP_HOST", "127.0.0.1")
+        self.udp_port = settings.getint("SC_LOG_UDP_PORT", 5230)
+        self.log_file = settings.getbool('SC_LOG_FILE', False)
+        self.name = name
+        self.logger = logging.getLogger(name)
+        self.logger.propagate = False
+        self.set_up()
 
 
 class LoggerDescriptor(object):
