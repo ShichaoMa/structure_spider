@@ -4,12 +4,11 @@ import pickle
 import argparse
 import traceback
 
+from scrapy import Request
 
-class RedisFeed(object):
 
+class SpiderFeeder(object):
     def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host, custom):
-
-        self.name = "redis_feed"
         self.crawlid = crawlid
         self.spiderid = spiderid
         self.url = url
@@ -31,9 +30,9 @@ class RedisFeed(object):
 
     @classmethod
     def parse_args(cls):
-
         parser = argparse.ArgumentParser(description="usage: %prog [options]")
-        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1", help="Redis host to feed in. ")
+        parser.add_argument(
+            '-rh', "--redis-host", dest="host", type=str, default="127.0.0.1", help="Redis host to feed in. ")
         parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379, help="Redis port to feed in. ")
         parser.add_argument('-u', '--url', type=str, help="The url to crawl, a list of products. ")
         parser.add_argument('-uf', '--urls-file', type=str, help="The urlsfile to crawl, single product. ")
@@ -47,7 +46,6 @@ class RedisFeed(object):
         failed_keys = self.redis_conn.keys("failed_download_*:%s" % crawlid)
         for fk in failed_keys:
             self.redis_conn.delete(fk)
-
         self.redis_conn.delete("crawlid:%s" % crawlid)
         self.redis_conn.delete("crawlid:%s:model" % crawlid)
 
@@ -59,14 +57,12 @@ class RedisFeed(object):
                 lst = f.readlines()
                 lines_count = len(lst)
                 for index, url in enumerate(lst):
-                    req_meta = {
-                        "url": url.strip("\357\273\277\r\n"),
-                        "crawlid": self.crawlid,
-                        "spiderid": self.spiderid,
-                        "priority": self.priority,
-                        "callback": "parse_item"
-                    }
-                    self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
+                    req = Request(
+                        url=url.strip("\357\273\277\r\n"),
+                        callback="parse_item",
+                        meta={"crawlid": self.crawlid, "spiderid": self.spiderid, "priority": self.priority}
+                    )
+                    self.failed_count += self.feed(self.get_name(), pickle.dumps(req))
                     success_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
         # 分类抓取
@@ -75,16 +71,14 @@ class RedisFeed(object):
             lines_count = len(url_list)
 
             for index, url in enumerate(url_list):
-                req_meta = {
-                    "url": url.strip(),
-                    "crawlid": self.crawlid,
-                    "spiderid": self.spiderid,
-                    "priority": self.priority,
-                    "callback": "parse"
-                }
-                self.failed_count += self.feed(self.get_name(), pickle.dumps(req_meta))
+                req = Request(
+                    url=url.strip(),
+                    callback="parse",
+                    meta={"crawlid": self.crawlid, "spiderid": self.spiderid, "priority": self.priority}
+                )
+                self.failed_count += self.feed(self.get_name(), pickle.dumps(req))
                 sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
-        print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(success_rate, failed_rate))
+        print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%" % (success_rate, failed_rate))
 
     def get_name(self):
         return "{sid}:request:queue".format(sid=self.spiderid)
@@ -102,7 +96,6 @@ class RedisFeed(object):
             return 1
 
     def show_process_line(self, count, num, failed):
-
         per = count / 100
         success = num - failed
         success_rate = success * 100.0 / count
@@ -112,7 +105,6 @@ class RedisFeed(object):
 
         if num >= self.inc:
             self.inc += per
-
             if sys.platform == "win32":
                 import ctypes
                 std_out_handle = ctypes.windll.kernel32.GetStdHandle(-11)
@@ -132,10 +124,8 @@ class RedisFeed(object):
                 print("\r", str_success_rate, "")
                 print("%s%s" % (int(success_rate * 50 / 100) * '\033[42m \033[0m',
                                 int(failed_rate * 50 / 100) * '\033[41m \033[0m'), str_failed_rate)
-
         return success_rate, failed_rate
 
 if __name__ == "__main__":
-
-    RF = RedisFeed.parse_args()
+    RF = SpiderFeeder.parse_args()
     RF.start()

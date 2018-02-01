@@ -255,23 +255,6 @@ class CustomLogger(Logger):
         self.set_up()
 
 
-class LoggerDescriptor(object):
-
-    def __init__(self, logger=None):
-        self.logger = logger
-
-    def __get__(self, instance, cls):
-        if not self.logger:
-            self.logger = CustomLogger.from_crawler(instance.crawler)
-        return self.logger
-
-    def __set__(self, instance, value):
-        raise ValueError("Readonly object. ")
-
-    def __getattr__(self, item):
-        raise AttributeError
-
-
 def url_arg_increment(arg_pattern, url):
     """
     对于使用url arguments标志page字段而实现分页的url，使用这个函数生成下一页url

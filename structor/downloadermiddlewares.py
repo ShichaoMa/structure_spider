@@ -23,8 +23,6 @@ from scrapy.core.downloader.handlers.http11 import TunnelError
 from toolkit import parse_cookie
 
 from .utils import CustomLogger
-from .exception_process import process_exception_method_wrapper, \
-    process_requset_method_wrapper, process_response_method_wrapper
 
 
 class DownloaderBaseMiddleware(object):
@@ -42,7 +40,6 @@ class DownloaderBaseMiddleware(object):
 class ProxyMiddleware(DownloaderBaseMiddleware):
 
     def __init__(self, settings):
-
         super(ProxyMiddleware, self).__init__(settings)
         self.proxy_sets = self.settings.get("PROXY_SETS", "proxy_set").split(",")
 
@@ -53,7 +50,6 @@ class ProxyMiddleware(DownloaderBaseMiddleware):
             proxy = None
         return proxy and proxy.decode("utf-8")
 
-    @process_requset_method_wrapper
     def process_request(self, request, spider):
         if self.settings.get("CHANGE_PROXY", False) or spider.change_proxy:
             spider.proxy = None
@@ -61,11 +57,10 @@ class ProxyMiddleware(DownloaderBaseMiddleware):
 
         if self.proxy_sets:
                 spider.proxy = spider.proxy or self.choice()
-
         if spider.proxy:
             proxy = "http://"+spider.proxy
             request.meta['proxy'] = proxy
-            self.logger.debug("use proxy %s to send request"%proxy, extra={"rasp_proxy": proxy})
+            self.logger.debug("Use proxy %s to send request" % proxy)
             if self.settings.get("PROXY_ACCOUNT_PASSWORD"):
                 encoded_user_pass = base64.b64encode(self.settings.get("PROXY_ACCOUNT_PASSWORD").encode("utf-8"))
                 request.headers['Proxy-Authorization'] = b'Basic ' + encoded_user_pass
@@ -103,7 +98,6 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, DownloaderBaseMiddleware):
             else:
                 yield None
 
-    @process_requset_method_wrapper
     def process_request(self, request, spider):
         if self.user_agent:
             request.headers['User-Agent'] = self.user_agent
@@ -118,9 +112,7 @@ class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
         DownloaderBaseMiddleware.__init__(self, settings)
         self.stats = self.crawler.stats
 
-    @process_response_method_wrapper
     def process_response(self, request, response, spider):
-
         if request.meta.get('dont_redirect', False):
             return response
 
@@ -133,20 +125,17 @@ class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
             redirected_url = urljoin(request.url, safe_url_string(response.headers['location']))
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
-
         return response
 
     def _redirect(self, redirected, request, spider, reason):
-
         reason = response_status_message(reason)
         redirects = request.meta.get('redirect_times', 0) + 1
 
         if redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
-            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
-                                               [request.url]
+            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + [request.url]
             redirected.meta['priority'] = redirected.meta['priority'] + self.priority_adjust
-            self.logger.debug("Redirecting %s to %s from %s for %s times " % (
+            self.logger.debug("Redirecting %s to %s from %s for %s times. " % (
                 reason, redirected.url, request.url, redirected.meta.get("redirect_times")))
             return redirected
         else:
@@ -154,10 +143,9 @@ class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
             if request.meta.get("callback") == "parse":
                 self.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
                 self.logger.error(
-                    " in redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
+                    "In redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
                         request.url, reason, request.meta))
-
-            raise IgnoreRequest("max redirections reached:%s" % reason)
+            raise IgnoreRequest("Max redirections reached:%s" % reason)
 
 
 class CustomCookiesMiddleware(DownloaderBaseMiddleware, CookiesMiddleware):
@@ -174,19 +162,15 @@ class CustomCookiesMiddleware(DownloaderBaseMiddleware, CookiesMiddleware):
             raise NotConfigured
         return obj
 
-    @process_requset_method_wrapper
     def process_request(self, request, spider):
-
         if 'dont_merge_cookies' in request.meta:
             return
-        self.logger.debug("process in CustomCookiesMiddleware. ")
         headers = self.settings.get("HEADERS", {}).get(spider.name, {}).copy()
         cookiejarkey = request.meta.get("cookiejar", spider.proxy)
         jar = self.jars[cookiejarkey]
         if not request.meta.get("dont_update_cookies"):
             request.cookies.update(parse_cookie(headers.get("Cookie", "")))
         cookies = self._get_request_cookies(jar, request)
-
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
 
@@ -201,9 +185,7 @@ class CustomCookiesMiddleware(DownloaderBaseMiddleware, CookiesMiddleware):
             msg += os.linesep.join("Cookie: %s" % c for c in cl)
             self.logger.debug(msg)
 
-    @process_response_method_wrapper
     def process_response(self, request, response, spider):
-
         if request.meta.get('dont_merge_cookies', False):
             return response
 
@@ -224,30 +206,24 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
         RetryMiddleware.__init__(self, settings)
         DownloaderBaseMiddleware.__init__(self, settings)
 
-    @process_response_method_wrapper
     def process_response(self, request, response, spider):
-
         if request.meta.get('dont_retry', False):
             return response
 
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
-
         return response
 
-    @process_exception_method_wrapper
     def process_exception(self, request, exception, spider):
-
         if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
                 and not request.meta.get('dont_retry', False):
             return self._retry(request, "%s:%s" % (exception.__class__.__name__, exception), spider)
-
         else:
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
 
-            self.logger.error("in retry request error %s" % traceback.format_exc())
+            self.logger.error("In retry request error %s" % traceback.format_exc())
             raise IgnoreRequest("%s:%s unhandle error. " % (exception.__class__.__name__, exception))
 
     def _retry(self, request, reason, spider):
@@ -255,7 +231,7 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
         retries = request.meta.get('retry_times', 0) + 1
 
         if request.meta.get("if_next_page"):
-            self.logger.debug("in _retry re-yield next_pages request: %s, reason: %s. " % (request.url, reason))
+            self.logger.debug("In _retry re-yield next_pages request: %s, reason: %s. " % (request.url, reason))
             return request.copy()
         elif retries <= self.max_retry_times:
             retryreq = request.copy()
@@ -263,16 +239,13 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
             retryreq.dont_filter = True
             retryreq.meta['priority'] = retryreq.meta['priority'] + self.crawler.settings.get(
                 "REDIRECT_PRIORITY_ADJUST")
-            self.logger.debug("in _retry retries times: %s, re-yield request: %s, reason: %s" % (
-            retries, request.url, reason))
+            self.logger.debug(
+                "In _retry retries times: %s, re-yield request: %s, reason: %s" % (retries, request.url, reason))
             return retryreq
-
         else:
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-            self.logger.error(
-                "retry request error to failed pages url:%s, exception:%s, meta:%s" % (
+            self.logger.error("Retry request error to failed pages url:%s, exception:%s, meta:%s" % (
                     request.url, reason, request.meta))
             self.logger.info("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
-            raise IgnoreRequest("%s %s" % (reason, "retry %s times. "%retries))
-
+            raise IgnoreRequest("%s %s" % (reason, "retry %s times. " % retries))

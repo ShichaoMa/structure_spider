@@ -30,7 +30,8 @@ class DoubanSpider(StructureSpider):
         "ITEM_PIPELINES": {
             "structor.pipelines.FilePipeline": 100,
             # "structor.pipelines.FilePipeline": 101,
-        }
+        },
+        "RETRY_HTTP_CODES": [500, 502, 503, 504, 400, 408, 304]
     }
     @staticmethod
     def get_base_loader(response):

@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
-from .redis_feed import RedisFeed
+from .spider_feeder import SpiderFeeder
 from .check_status import main
 from .start_project import start as start_project, create as create_spider
 
-VERSION = '1.0.7'
+VERSION = '1.1.0'
 
 AUTHOR = "cn"
 
@@ -17,4 +17,4 @@ def check():
 
 
 def feed():
-    RedisFeed.parse_args().start()
+    SpiderFeeder.parse_args().start()
