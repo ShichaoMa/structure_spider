@@ -6,7 +6,6 @@ from .utils import CustomLogger
 
 
 class Scheduler(object):
-    # 记录当前正在处理的item, 在处理异常时使用
     spider = None
 
     def __init__(self, crawler):
@@ -39,7 +38,7 @@ class Scheduler(object):
         self.logger.debug("Crawlid: %s, url: %s added to queue. " % (request.meta['crawlid'], request.url))
 
     def next_request(self):
-        self.logger.info("length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
+        self.logger.debug("length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
         item = None
         if time.time() - self.request_interval < self.last_acs_time:
             return item

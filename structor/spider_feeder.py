@@ -126,6 +126,6 @@ class SpiderFeeder(object):
                                 int(failed_rate * 50 / 100) * '\033[41m \033[0m'), str_failed_rate)
         return success_rate, failed_rate
 
+
 if __name__ == "__main__":
-    RF = SpiderFeeder.parse_args()
-    RF.start()
+    SpiderFeeder.parse_args().start()

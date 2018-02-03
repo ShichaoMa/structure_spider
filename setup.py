@@ -29,10 +29,10 @@ LICENSE = "MIT"
 PACKAGES = ["structor", "structor.spiders", "structor.items"]
 
 setup(
-    name = NAME,
-    version = VERSION,
-    description = DESCRIPTION,
-    long_description = LONG_DESCRIPTION,
+    name=NAME,
+    version=VERSION,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
@@ -47,12 +47,12 @@ setup(
             'createspider = structor:create_spider'
         ],
     },
-    keywords = KEYWORDS,
-    author = AUTHOR,
-    author_email = AUTHOR_EMAIL,
-    url = URL,
-    license = LICENSE,
-    packages = PACKAGES,
+    keywords=KEYWORDS,
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
+    url=URL,
+    license=LICENSE,
+    packages=PACKAGES,
     install_requires=["parsel>=1.2.0", "scrapy>=1.4.0", "toolkity", "jinja2", "custom-redis>=3.1.2"],
     include_package_data=True,
     zip_safe=True,
