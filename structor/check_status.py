@@ -21,9 +21,9 @@ def start(crawlid, host, port):
     failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x.decode(), "failed_download_*")]
     format(data)
     for fk in failed_keys:
-        print_if = input("show the %s? y/n default n:" % fk.replace("_", " "))
+        print_if = input("show the %s? y/n default n:" % fk.decode().replace("_", " "))
         if print_if == "y":
-            key_ = "%s:%s" % (fk, crawlid)
+            key_ = "%s:%s" % (fk.decode(), crawlid)
             p = redis_conn.hgetall(key_)
             format(p, True)
 

@@ -33,16 +33,16 @@ class StatsCollector(MemoryStatsCollector):
             })
         self.redis_conn.expire("crawlid:%s" % crawlid, 60 * 60 * 24 * 2)
 
-    def set_failed_download(self, meta, reason, _type="pages"):
+    def set_failed_download(self, crawlid, url, reason, _type="pages"):
         with ExceptContext():
-            self.redis_conn.hincrby("crawlid:%s" % meta.get('crawlid'), "failed_download_%s"%_type, 1)
-            self.update(meta.get('crawlid'))
-            self.set_failed(meta, reason, _type)
+            self.redis_conn.hincrby("crawlid:%s" % crawlid, "failed_download_%s" % _type, 1)
+            self.update(crawlid)
+            self.set_failed(crawlid, reason, url, _type)
 
-    def set_failed(self, meta, reason, _type="pages"):
+    def set_failed(self, crawlid, url, reason, _type="pages"):
         with ExceptContext():
-            self.redis_conn.hset("failed_download_%s:%s" % (_type, meta.get('crawlid')), meta.get('url'), reason)
-            self.redis_conn.expire("failed_download_%s:%s" % (_type, meta.get('crawlid')), 60 * 60 * 24 * 2)
+            self.redis_conn.hset("failed_download_%s:%s" % (_type, crawlid), url, reason)
+            self.redis_conn.expire("failed_download_%s:%s" % (_type, crawlid), 60 * 60 * 24 * 2)
 
     def inc_total_pages(self, crawlid, num=1):
         with ExceptContext():

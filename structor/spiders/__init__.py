@@ -57,17 +57,6 @@ class StructureSpider(Spider):
     def extract_item_urls(self, response):
         return [response.urljoin(x) for x in set(response.xpath("|".join(self.item_pattern)).extract())]
 
-    @staticmethod
-    def adjust(response):
-        if "if_next_page" in response.meta:
-            del response.meta["if_next_page"]
-        else:
-            response.meta["seed"] = response.url
-        # 防止代理继承  add at 16.10.26
-        response.meta.pop("proxy", None)
-        response.meta["callback"] = "parse_item"
-        response.meta["priority"] -= 20
-
     def extract_page_url(self, response, effective_urls, item_urls):
         """
         返回下一页链接
@@ -90,16 +79,12 @@ class StructureSpider(Spider):
                 next_page_url = url_item_arg_increment(xpath, page_url, len(item_urls))
         else:
             next_page_url = None
-
-        response.meta["if_next_page"] = True
-        response.meta["callback"] = "parse"
-        response.meta["priority"] += 20
         return next_page_url
 
     @enrich_wrapper
     def enrich_base_data(self, item_loader, response):
         item_loader.add_value('spiderid', response.meta.get('spiderid'))
-        item_loader.add_value('url', response.meta.get("url"))
+        item_loader.add_value('url', response.request.url)
         item_loader.add_value("seed", response.meta.get("seed", ""))
         item_loader.add_value("timestamp", time.strftime("%Y%m%d%H%M%S"))
         item_loader.add_value('status_code', response.status)
@@ -136,19 +121,26 @@ class StructureSpider(Spider):
         with ExceptContext(errback=self.log_err) as ec:
             self.logger.debug("Start response in parse. ")
             item_urls = self.extract_item_urls(response)
-            self.adjust(response)
             # 增加这个字段的目的是为了记住去重后的url有多少个，如果为空，对于按参数翻页的网站，有可能已经翻到了最后一页。
             effective_urls = [i for i in item_urls
                               if not (self.need_duplicate and self.duplicate_filter(response, i, self.need_duplicate))]
             self.crawler.stats.inc_total_pages(response.meta['crawlid'], len(effective_urls))
             yield from self.gen_requests(
-                [dict(url=u, errback="errback") for u in effective_urls], "parse_item", response)
+                [dict(url=u,
+                      errback="errback",
+                      meta={
+                          "priority": response.meta["priority"]-20,
+                          "seed": response.url,
+                          "proxy": None
+                      })
+                 for u in effective_urls], "parse_item", response)
 
             next_page_url = self.extract_page_url(response, effective_urls, item_urls)
             if next_page_url:
                 yield from self.gen_requests([next_page_url], "parse", response)
         if ec.got_err:
-            self.crawler.stats.set_failed_download(response.meta, "In parse: " + traceback.format_exc())
+            self.crawler.stats.set_failed_download(
+                response.meta['crawlid'], response.request.url, "In parse: " + traceback.format_exc())
 
     @staticmethod
     def gen_requests(url_metas, callback, response):
@@ -161,15 +153,17 @@ class StructureSpider(Spider):
         :return:
         """
         for url_meta in url_metas:
+            meta = response.meta.copy()
             if isinstance(url_meta, dict):
                 url_meta["callback"] = callback
                 response.meta["url"] = url_meta["url"]
-                yield Request(**url_meta, meta=response.meta)
+                meta.update(url_meta.pop("meta", {}))
+                yield Request(**url_meta, meta=meta)
                 continue
             elif not isinstance(url_meta, list):
                 url_meta = [url_meta, callback]
-            response.meta["url"] = url_meta[0]
-            yield Request(*url_meta, meta=response.meta)
+            meta["url"] = url_meta[0]
+            yield Request(*url_meta, meta=meta)
 
     def process_forward(self, response, item):
         self.logger.info("crawlid:%s, id: %s, %s requests send for successful yield item" % (
@@ -187,8 +181,10 @@ class StructureSpider(Spider):
             meta["item_collector"].add((None, base_loader, None))
             self.enrich_data(base_loader, response)
             yield self.yield_item_or_req(meta["item_collector"], response)
+
         if ec.got_err:
-            self.crawler.stats.set_failed_download(response.meta, "In parse_item: " + traceback.format_exc())
+            self.crawler.stats.set_failed_download(
+                response.meta['crawlid'], response.request.url, "In parse_item: " + traceback.format_exc())
 
     def yield_item_or_req(self, item_collector, response):
         item_or_req = item_collector.load(response)
@@ -197,27 +193,30 @@ class StructureSpider(Spider):
         return self.process_forward(response, item_or_req)
 
     def parse_next(self, response):
+        if response.status == 999:
+            self.logger.error("Partial request error: crawlid:%s, url: %s. " % (response.meta["crawlid"], response.url))
         with ExceptContext(errback=self.log_err) as ec:
             response.meta["request_count_per_item"] = response.meta.get("request_count_per_item", 1) + 1
             item_collector = response.request.meta["item_collector"]
             prop, item_loader, funcs = item_collector.get()
-            getattr(self, "enrich_%s"%prop)(item_loader, response)
+            getattr(self, "enrich_%s" % prop)(item_loader, response)
             yield self.yield_item_or_req(item_collector, response)
+
         if ec.got_err:
-            self.crawler.stats.set_failed_download(response.meta, "In parse_next: " + traceback.format_exc())
+            self.crawler.stats.set_failed_download(
+                response.meta['crawlid'], response.request.url, "In parse_next: " + traceback.format_exc())
 
     def errback(self, failure):
         if failure and failure.value and hasattr(failure.value, 'response'):
             response = failure.value.response
-
             if response:
                 loader = self.get_base_loader(response)
                 self.enrich_base_data(loader, response)
                 item = loader.load_item()
-                self.logger.error("errback: %s" % item)
+                self.logger.error("Errback: %s" % item)
                 self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
                 return item
             else:
-                self.logger.error("failure has NO response")
+                self.logger.error("Failure has no response")
         else:
-            self.logger.error("failure or failure.value is NULL, failure: %s" % failure)
+            self.logger.error("Failure or failure.value is None, failure: %s" % failure)

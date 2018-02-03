@@ -19,25 +19,27 @@ You can start the spider with:
 dev@ubuntu:~$ custom-redis-server -ll INFO -lf
 ```
 ### 生成自定义spider及item
+使用createspider可以生成直接可用的spider，-s指定spider名称，随后创建要抓取的字段及其规则
+，使用=连接。规则可以是正则表达式，xpath, css。
+
+如需进一步增加复杂规则或进行数据清洗，请参考wiki。
 ```
 dev@ubuntu:~$ cd myapp/myapp/
 dev@ubuntu:~/myapp/myapp$ ls
 items  settings.py  spiders
-dev@ubuntu:~/myapp/myapp$ createspider -s taobao id title brand price colors images
-TaobaoSpdier and TaobaoItem have been created.
+dev@ubuntu:~/myapp/myapp$ createspider -s zhaopin "product_id=/(\d+)\\.htm" "job=//h1/text()" "salary=//a/../../strong/text()" 'city=//ul[@class="terminal-ul clearfix"]//strong/a/text()' 'education=//span[contains(text(), "学历")]/following-sibling::strong/text()' "requirement=.tab-inner-cont"
+ZhaopinSpdier and ZhaopinItem have been created.
 dev@ubuntu:~/myapp/myapp$
 ```
-### 为爬虫编写规则
-请看wiki
 
 参考资料：[使用structure_spider多请求组合抓取结构化数据](https://zhuanlan.zhihu.com/p/28636195)
 ### 启动爬虫
 ```
-dev@ubuntu:~/myapp/myapp$ scrapy crawl taobao
+dev@ubuntu:~/myapp/myapp$ scrapy crawl zhaopin
 ```
 ### 投入任务
 ```
-dev@ubuntu:~/myapp$ feed -s taobao -c test -uf myapp/text.txt --custom # --custom代表使用的是简单redis
+dev@ubuntu:~/myapp$ feed -s zhaopin -uf test.txt -c zhaopin --custom # --custom代表使用的是简单redis
 ```
 
 更多资源:

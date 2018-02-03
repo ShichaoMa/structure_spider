@@ -3,22 +3,26 @@ import random
 import base64
 import traceback
 
-from w3lib.url import safe_url_string
 from urllib.parse import urljoin
+from w3lib.url import safe_url_string
 
 from scrapy import signals
+from scrapy.http import HtmlResponse
+from scrapy.utils.response import response_status_message
+
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+
 from scrapy.exceptions import IgnoreRequest, NotConfigured
-from scrapy.utils.response import response_status_message
+from scrapy.core.downloader.handlers.http11 import TunnelError
+
 from twisted.web.client import ResponseFailed
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
     ConnectionRefusedError, ConnectionDone, ConnectError, \
     ConnectionLost, TCPTimedOutError
-from scrapy.core.downloader.handlers.http11 import TunnelError
 
 from toolkit import parse_cookie
 
@@ -139,13 +143,14 @@ class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
                 reason, redirected.url, request.url, redirected.meta.get("redirect_times")))
             return redirected
         else:
-            self.logger.info("Discarding %s: max redirections reached" % request.url)
-            if request.meta.get("callback") == "parse":
+            if request.callback == spider.parse:
                 self.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-                self.logger.error(
-                    "In redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
-                        request.url, reason, request.meta))
-            raise IgnoreRequest("Max redirections reached:%s" % reason)
+            self.logger.error("Gave up redirecting %s (failed %d times): %s" % (request.url, redirects, reason))
+            spider.crawler.stats.set_failed_download(request.meta['crawlid'], request.url, reason)
+            if "item_collector" in request.meta:
+                return HtmlResponse(request.url, body=b"<html></html>", status=999, request=request)
+            else:
+                raise IgnoreRequest("%s %s" % (reason, "retry %s times. " % redirects))
 
 
 class CustomCookiesMiddleware(DownloaderBaseMiddleware, CookiesMiddleware):
@@ -220,9 +225,6 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
                 and not request.meta.get('dont_retry', False):
             return self._retry(request, "%s:%s" % (exception.__class__.__name__, exception), spider)
         else:
-            if request.meta.get("callback") == "parse":
-                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-
             self.logger.error("In retry request error %s" % traceback.format_exc())
             raise IgnoreRequest("%s:%s unhandle error. " % (exception.__class__.__name__, exception))
 
@@ -230,22 +232,18 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
         spider.change_proxy = True
         retries = request.meta.get('retry_times', 0) + 1
 
-        if request.meta.get("if_next_page"):
-            self.logger.debug("In _retry re-yield next_pages request: %s, reason: %s. " % (request.url, reason))
-            return request.copy()
-        elif retries <= self.max_retry_times:
+        if retries <= self.max_retry_times:
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
-            retryreq.dont_filter = True
-            retryreq.meta['priority'] = retryreq.meta['priority'] + self.crawler.settings.get(
-                "REDIRECT_PRIORITY_ADJUST")
-            self.logger.debug(
-                "In _retry retries times: %s, re-yield request: %s, reason: %s" % (retries, request.url, reason))
+            retryreq.meta['priority'] = retryreq.meta['priority'] + self.settings.get("REDIRECT_PRIORITY_ADJUST")
+            self.logger.debug("Reason: %s of %s times for %s to retry. " % (reason, retries, request.url))
             return retryreq
         else:
-            if request.meta.get("callback") == "parse":
-                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-            self.logger.error("Retry request error to failed pages url:%s, exception:%s, meta:%s" % (
-                    request.url, reason, request.meta))
-            self.logger.info("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
-            raise IgnoreRequest("%s %s" % (reason, "retry %s times. " % retries))
+            if request.callback == spider.parse:
+                spider.crawler.stats.inc_total_pages(request.meta['crawlid'])
+            self.logger.error("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
+            spider.crawler.stats.set_failed_download(request.meta['crawlid'], request.url, reason)
+            if "item_collector" in request.meta:
+                return HtmlResponse(request.url, body=b"<html></html>", status=999, request=request)
+            else:
+                raise IgnoreRequest("%s %s" % (reason, "retry %s times. " % retries))

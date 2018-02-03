@@ -15,5 +15,5 @@ from structor.items import BaseItem
 
 
 class {{class_name}}Item(BaseItem):
-{% for prop in props %}    {{prop}} = Field()
+{% for prop, _ in props.items() %}    {{prop}} = Field()
 {% endfor %}

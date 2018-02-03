@@ -32,4 +32,5 @@ class {{class_name}}Spider(StructureSpider):
 
     @enrich_wrapper
     def enrich_data(self, item_loader, response):
-        pass
+{% for prop, (typ, expression, sep) in props.items() %}        item_loader.add_{{typ}}("{{prop}}", {{sep}}{{expression}}{{sep}})
+{% endfor %}

@@ -5,15 +5,39 @@ import string
 
 from shutil import move
 from argparse import ArgumentParser
-from scrapy.commands import startproject
+from scrapy.commands.startproject import Command as _Command
 from scrapy.utils.template import render_templatefile, string_camelcase
 from os.path import exists, join, abspath, dirname, isabs, isfile
 
 
-class CustomStart(startproject.Command):
+class Command(_Command):
+    args = None
 
-    def run(self, project, opt=None):
+    def __init__(self):
+        super(Command, self).__init__()
+        self.parse_args()
+        self.settings = {}
+        if self.args.templates:
+            self.settings["TEMPLATES_DIR"] = self.args.templates
+        else:
+            self.settings["TEMPLATES_DIR"] = join(abspath(dirname(__file__)), "templates")
 
+    def parse_args(self):
+        parser = ArgumentParser()
+        self.enrich_parser_argument(parser)
+        parser.add_argument("-t", "--templates", help="Specify a templates path. ")
+        self.args = parser.parse_args()
+
+    def enrich_parser_argument(self, parser):
+        pass
+
+    def run(self):
+        pass
+
+
+class Start(Command):
+    def run(self):
+        project = self.args
         project_name = project
         project_dir = project
 
@@ -41,6 +65,9 @@ class CustomStart(startproject.Command):
         print("    cd %s" % project_dir)
         print("    custom-redis-server -ll INFO -lf &")
         print("    scrapy crawl douban")
+
+    def enrich_parser_argument(self, parser):
+        parser.add_argument("project", help="project or/and project dir")
 
 
 class Jinja2Template(object):
@@ -152,9 +179,18 @@ def template(*args, **kwargs):
     return tpl.render(kwargs)
 
 
-class CustomCreate(startproject.Command):
+class Create(Command):
+    def guess_type(self, expression):
+        if expression.startswith("//"):
+            return "xpath"
+        elif expression.count("("):
+            return "re"
+        else:
+            return "css"
 
-    def run(self, props, spider_name):
+    def run(self):
+        spider_name = self.args.spider
+        props = self.args.props
         words = re.findall(r"([A-Za-z0-9]+)", spider_name)
         if words[0].isdigit() or (words[0] and words[0][0].isdigit()):
             print("spider name cannot start with number!")
@@ -164,43 +200,47 @@ class CustomCreate(startproject.Command):
         templates_dir = [join(dirname(self.templates_dir), "spider")]
         current_dir = os.getcwd()
         entities = ["spider", "item"]
+        parsed_props = dict()
+        for prop in props:
+            if prop.count("="):
+                p, e = prop.split("=", 1)
+                sep = '"' if e.count("'") else "'"
+                parsed_props[p] = (self.guess_type(e), e, sep)
+            else:
+                parsed_props[prop] = ("xpath", "", "'")
 
         def render(entity):
-            if not exists(join(current_dir, "%ss"%entity)):
+            if not exists(join(current_dir, "%ss" % entity)):
                 self.exitcode = 1
                 print("Error dir! ")
                 exit(1)
-            open("%ss/%s_%s.py"%(entity, class_name.lower(), entity), "w").write(template(
-                "%s.py.tmpl"%entity, template_lookup=templates_dir, class_name=class_name,
-                spider_name=spider_name, props=props))
+            with open("%ss/%s_%s.py" % (entity, class_name.lower(), entity), "w") as f:
+                f.write(
+                    template("%s.py.tmpl" % entity,
+                             template_lookup=templates_dir,
+                             class_name=class_name,
+                             spider_name=spider_name, props=parsed_props)
+                )
 
         for entity in entities:
             render(entity)
 
         print("%sSpdier and %sItem have been created. "%(class_name, class_name))
 
+    def enrich_parser_argument(self, parser):
+        parser.add_argument("-s", "--spider", required=True, help="spider name")
+        parser.add_argument("props", nargs="+",
+                            help="prop name and re/css/xpath expression pairs, eg: title=//h1/text()")
+
 
 def create():
-    cmd = CustomCreate()
-    cmd.settings = {}
-    cmd.settings["TEMPLATES_DIR"] = join(abspath(dirname(__file__)), "templates")
-    parser = ArgumentParser()
-    parser.add_argument("-s", "--spider", required=True, help="spider name")
-    parser.add_argument("props", nargs="+", help="prop names")
-    args = parser.parse_args()
-    cmd.run(args.props, args.spider)
+    Create().run()
 
 
 def start():
-    cmd = CustomStart()
-    cmd.settings = {}
-    cmd.settings["TEMPLATES_DIR"] = join(abspath(dirname(__file__)), "templates")
-    parser = ArgumentParser()
-    parser.add_argument("project", help="project or/and project dir")
-    args = parser.parse_args()
-    cmd.run(args.project)
+    Start().run()
 
 
 if __name__ == "__main__":
-   start()
-   #create()
+   #start()
+   create()
