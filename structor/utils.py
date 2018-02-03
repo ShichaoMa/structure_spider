@@ -11,10 +11,11 @@ from toolkit import strip
 from toolkit.logger import Logger
 
 from scrapy import Selector, Item
-from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from scrapy.utils.misc import arg_to_iter
 from scrapy.loader.processors import Compose
+
+from .custom_request import Request
 
 
 class TakeAll(object):
