@@ -5,11 +5,13 @@ import argparse
 
 def format(d, f=False):
     for k, v in d.items():
+        k = k.decode() if isinstance(k, bytes) else k
+        v = v.decode() if isinstance(v, bytes) else v
         if f:
-            print("reason --> %s" % v.decode().ljust(30))
-            print("url    --> %s" % k.decode().ljust(30))
+            print("reason --> %s" % v.ljust(30))
+            print("url    --> %s" % k.ljust(30))
         else:
-            print("%s -->  %s" % (k.decode().ljust(30), v.decode()))
+            print("%s -->  %s" % (k.ljust(30), v))
 
 
 def start(crawlid, host, port, custom):
@@ -20,12 +22,13 @@ def start(crawlid, host, port, custom):
     redis_conn = Redis(host, port)
     key = "crawlid:%s" % crawlid
     data = redis_conn.hgetall(key)
-    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x.decode(), "failed_download_*")]
+    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x.decode() if isinstance(x, bytes) else x, "failed_download_*")]
     format(data)
     for fk in failed_keys:
-        print_if = input("show the %s? y/n default n:" % fk.decode().replace("_", " "))
+        fk = fk.decode() if isinstance(fk, bytes) else fk
+        print_if = input("show the %s? y/n default n:" % fk.replace("_", " "))
         if print_if == "y":
-            key_ = "%s:%s" % (fk.decode(), crawlid)
+            key_ = "%s:%s" % (fk, crawlid)
             p = redis_conn.hgetall(key_)
             format(p, True)
 
@@ -33,7 +36,7 @@ def start(crawlid, host, port, custom):
 def main():
     parser = argparse.ArgumentParser(description="usage: %prog [options]")
     parser.add_argument("--host", default="127.0.0.1", help="redis host")
-    parser.add_argument("-p", "--port", default=6379, help="redis port")
+    parser.add_argument("-p", "--port",type=int, default=6379, help="redis port")
     parser.add_argument("--custom", action="store_true", help="Use custom redis or not")
     parser.add_argument("crawlids", nargs="+", help="Crawlids to check. ")
     args = parser.parse_args()

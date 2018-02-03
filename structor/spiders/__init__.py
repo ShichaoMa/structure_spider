@@ -9,7 +9,7 @@ import traceback
 from functools import reduce
 from urllib.parse import urlparse, urljoin
 
-from scrapy import signals, Request
+from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
 from scrapy.spiders import Spider
 from scrapy.utils.response import response_status_message
@@ -17,6 +17,7 @@ from scrapy.utils.response import response_status_message
 from toolkit import cache_prop
 from toolkit.managers import ExceptContext
 
+from ..custom_request import Request
 from ..utils import CustomLogger, enrich_wrapper, ItemCollector, \
     url_arg_increment, url_item_arg_increment, url_path_arg_increment
 
