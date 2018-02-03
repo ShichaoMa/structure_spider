@@ -37,7 +37,7 @@ class Command(_Command):
 
 class Start(Command):
     def run(self):
-        project = self.args
+        project = self.args.project
         project_name = project
         project_dir = project
 
