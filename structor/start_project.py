@@ -189,9 +189,7 @@ class Create(Command):
             return "css"
 
     def run(self):
-        spider_name = self.args.spider
-        props = self.args.props
-        words = re.findall(r"([A-Za-z0-9]+)", spider_name)
+        words = re.findall(r"([A-Za-z0-9]+)", self.args.spider)
         if words[0].isdigit() or (words[0] and words[0][0].isdigit()):
             print("spider name cannot start with number!")
             exit(1)
@@ -201,7 +199,7 @@ class Create(Command):
         current_dir = os.getcwd()
         entities = ["spider", "item"]
         parsed_props = dict()
-        for prop in props:
+        for prop in self.args.props:
             if prop.count("="):
                 p, e = prop.split("=", 1)
                 sep = '"' if e.count("'") else "'"
@@ -209,26 +207,31 @@ class Create(Command):
             else:
                 parsed_props[prop] = ("xpath", "", "'")
 
-        def render(entity):
+        for entity in entities:
             if not exists(join(current_dir, "%ss" % entity)):
                 self.exitcode = 1
                 print("Error dir! ")
                 exit(1)
             with open("%ss/%s_%s.py" % (entity, class_name.lower(), entity), "w") as f:
                 f.write(
-                    template("%s.py.tmpl" % entity,
+                    template(entity + ".py.tmpl",
                              template_lookup=templates_dir,
                              class_name=class_name,
-                             spider_name=spider_name, props=parsed_props)
+                             spider_name=self.args.spider,
+                             props=parsed_props,
+                             item_pattern=(self.args.item_pattern, '"' if self.args.item_pattern.count("'") else "'"),
+                             page_pattern=(self.args.page_pattern, '"' if self.args.page_pattern.count("'") else "'"),
+                             )
                 )
-
-        for entity in entities:
-            render(entity)
 
         print("%sSpdier and %sItem have been created. "%(class_name, class_name))
 
     def enrich_parser_argument(self, parser):
-        parser.add_argument("-s", "--spider", required=True, help="spider name")
+        parser.add_argument("-s", "--spider", required=True, help="Spider name")
+        parser.add_argument("-ip", "--item_pattern", default="",
+                            help="Spider item pattern: xpath expression for acquire item link. ")
+        parser.add_argument("-pp", "--page_pattern", default="",
+                            help="Spider page pattern: expression for acquire next page link. ")
         parser.add_argument("props", nargs="+",
                             help="prop name and re/css/xpath expression pairs, eg: title=//h1/text()")
 

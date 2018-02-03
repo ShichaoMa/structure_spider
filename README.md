@@ -27,7 +27,7 @@ dev@ubuntu:~$ custom-redis-server -ll INFO -lf
 dev@ubuntu:~$ cd myapp/myapp/
 dev@ubuntu:~/myapp/myapp$ ls
 items  settings.py  spiders
-dev@ubuntu:~/myapp/myapp$ createspider -s zhaopin "product_id=/(\d+)\\.htm" "job=//h1/text()" "salary=//a/../../strong/text()" 'city=//ul[@class="terminal-ul clearfix"]//strong/a/text()' 'education=//span[contains(text(), "学历")]/following-sibling::strong/text()' "requirement=.tab-inner-cont"
+dev@ubuntu:~/myapp/myapp$ createspider -s zhaopin "product_id=/(\d+)\\.htm" "job=//h1/text()" "salary=//a/../../strong/text()" 'city=//ul[@class="terminal-ul clearfix"]//strong/a/text()' 'education=//span[contains(text(), "学历")]/following-sibling::strong/text()' "company=h2 > a" -ip '//td[@class="zwmc"]/div/a[1]/@href' -pp '//li[@class="pagesDown-pos"]/a/@href'
 ZhaopinSpdier and ZhaopinItem have been created.
 dev@ubuntu:~/myapp/myapp$
 ```
@@ -39,9 +39,12 @@ dev@ubuntu:~/myapp/myapp$ scrapy crawl zhaopin
 ```
 ### 投入任务
 ```
-dev@ubuntu:~/myapp$ feed -s zhaopin -uf test.txt -c zhaopin --custom # --custom代表使用的是简单redis
+dev@ubuntu:~/myapp$ feed -s zhaopin -u "https://sou.zhaopin.com/jobs/searchresult.ashx?jl=%E6%B5%8E%E5%8D%97&kw=%E9%94%80%E5%94%AE&sm=0&p=1" -c zhaopin --custom # --custom代表使用的是简单redis
 ```
-
+### 查看任务状态
+```
+dev@ubuntu:~/myapp$ check zhaopin
+```
 更多资源:
 
 [[structure_spider每周一练]：一键下载百度mp3](https://zhuanlan.zhihu.com/p/29076630)

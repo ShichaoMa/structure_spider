@@ -23,8 +23,8 @@ from ..items.{{class_name.lower()}}_item import {{class_name}}Item
 class {{class_name}}Spider(StructureSpider):
     name = "{{spider_name}}"
     # 分类抓取的时候使用这两个属性
-    item_pattern = ()
-    page_pattern = ()
+    item_pattern = ({{item_pattern[1]}}{{item_pattern[0]}}{{item_pattern[1]}},)
+    page_pattern = ({{page_pattern[1]}}{{page_pattern[0]}}{{page_pattern[1]}},)
 
     @staticmethod
     def get_base_loader(response):
