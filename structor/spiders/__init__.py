@@ -17,8 +17,9 @@ from scrapy.utils.response import response_status_message
 from toolkit import cache_prop
 from toolkit.managers import ExceptContext
 
-from ..utils import CustomLogger, enrich_wrapper, ItemCollector, \
+from ..utils import CustomLogger, enrich_wrapper, \
     url_arg_increment, url_item_arg_increment, url_path_arg_increment
+from ..item_collector import ItemCollector, Node
 
 
 class StructureSpider(Spider):
@@ -176,10 +177,8 @@ class StructureSpider(Spider):
             response.meta["request_count_per_item"] = 1
             base_loader = self.get_base_loader(response)
             meta = response.request.meta
-            meta["item_collector"] = ItemCollector()
             self.enrich_base_data(base_loader, response)
-            meta["item_collector"].add((None, base_loader, None))
-            self.enrich_data(base_loader, response)
+            meta["item_collector"] = ItemCollector(Node(None, base_loader, None, self.enrich_data))
             yield self.yield_item_or_req(meta["item_collector"], response)
 
         if ec.got_err:
@@ -187,7 +186,7 @@ class StructureSpider(Spider):
                 response.meta['crawlid'], response.request.url, "In parse_item: " + traceback.format_exc())
 
     def yield_item_or_req(self, item_collector, response):
-        item_or_req = item_collector.load(response)
+        item_or_req = item_collector.collect(response, self)
         if isinstance(item_or_req, Request):
             return item_or_req
         return self.process_forward(response, item_or_req)
@@ -197,10 +196,7 @@ class StructureSpider(Spider):
             self.logger.error("Partial request error: crawlid:%s, url: %s. " % (response.meta["crawlid"], response.url))
         with ExceptContext(errback=self.log_err) as ec:
             response.meta["request_count_per_item"] = response.meta.get("request_count_per_item", 1) + 1
-            item_collector = response.request.meta["item_collector"]
-            prop, item_loader, funcs = item_collector.get()
-            getattr(self, "enrich_%s" % prop)(item_loader, response)
-            yield self.yield_item_or_req(item_collector, response)
+            yield self.yield_item_or_req(response.request.meta["item_collector"], response)
 
         if ec.got_err:
             self.crawler.stats.set_failed_download(

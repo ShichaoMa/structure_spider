@@ -136,6 +136,7 @@ def enrich_wrapper(func):
 class ItemCollector(object):
     """
     ItemCollector的实现
+    过时
     """
     def __init__(self):
         self.tuples = list()
