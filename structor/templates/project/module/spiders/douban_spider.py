@@ -29,7 +29,9 @@ class DoubanSpider(StructureSpider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "structor.pipelines.FilePipeline": 100,
+            # "structor.pipelines.FilePipeline": 101,
         },
+        #"RETRY_HTTP_CODES": [500, 502, 503, 504, 400, 408, 304]
     }
     @staticmethod
     def get_base_loader(response):
@@ -62,15 +64,15 @@ class DoubanSpider(StructureSpider):
         if comments_url:
             nodes.append(("comments", item_loader, {"url": comments_url}))
 
-        questions_url = xpath_exchange(response.xpath('//div[@id="askmatrix"]/div/h2/span/a/@href'))
-        if questions_url:
-            nodes.append(("questions", item_loader, {"url": questions_url}))
+        question_list_url = xpath_exchange(response.xpath('//div[@id="askmatrix"]/div/h2/span/a/@href'))
+        if question_list_url:
+            nodes.append(("question_list", item_loader, {"url": question_list_url}))
 
-        reviews_url = xpath_exchange(response.xpath('//section[@class="reviews mod movie-content"]//h2/span/a/@href'))
-        if reviews_url:
-            nodes.append(("reviews", item_loader, {"url": response.url.split("?")[0] + reviews_url}))
+        review_list_url = xpath_exchange(response.xpath('//section[@class="reviews mod movie-content"]//h2/span/a/@href'))
+        if review_list_url:
+            nodes.append(("review_list", item_loader, {"url": response.url.split("?")[0] + review_list_url}))
 
-        response.meta["item_collector"].extend(nodes)
+        return nodes
 
     @enrich_wrapper
     def enrich_celebrities(self, item_loader, response):
@@ -120,30 +122,30 @@ class DoubanSpider(StructureSpider):
         item_loader.add_value("comments", comment_list)
         next_url = xpath_exchange(response.xpath('//div[@id="paginator"]/a[@class="next"]/@href'))
         if next_url:
-            response.meta["item_collector"].add(("comments", item_loader, {"url": response.urljoin(next_url)}))
+            return [("comments", item_loader, {"url": response.urljoin(next_url)})]
+
+    @enrich_wrapper
+    def enrich_question_list(self, item_loader, response):
+        self.logger.debug("Start to enrich_question_list. ")
+        nodes = list()
+        next_url = xpath_exchange(response.xpath('//span[@class="next"]/a/@href'))
+        if next_url:
+            nodes.append(("question_list", item_loader, {"url": response.urljoin(next_url)}))
+        qustions = response.xpath('//div[@class="questions"]/div[@class="item"]')
+        for question in qustions:
+            nodes.append(("questions", CustomLoader(item=QuestionItem()), {"url": xpath_exchange(question.xpath('h3/a/@href'))}))
+
+        return nodes
 
     @enrich_wrapper
     def enrich_questions(self, item_loader, response):
         self.logger.debug("Start to enrich_questions. ")
-        nodes = list()
-        next_url = xpath_exchange(response.xpath('//span[@class="next"]/a/@href'))
-        if next_url:
-            nodes.append(("questions", item_loader, {"url": response.urljoin(next_url)}))
-        qustions = response.xpath('//div[@class="questions"]/div[@class="item"]')
-        for question in qustions:
-            nodes.append(("question", CustomLoader(item=QuestionItem()), {"url": xpath_exchange(question.xpath('h3/a/@href'))}))
-
-        response.meta["item_collector"].extend(nodes)
-
-    @enrich_wrapper
-    def enrich_question(self, item_loader, response):
-        self.logger.debug("Start to enrich_question. ")
         item_loader.add_xpath("title", '//div[@class="article"]/h1/text()')
         item_loader.add_xpath("content", '//div[@id="question-content"]/p/text()')
         item_loader.add_xpath("author", '//div[@class="article"]/p[@class="meta"]/a/text()')
         item_loader.add_xpath("datetime", '//div[@class="article"]/p[@class="meta"]/text()', lambda values: values[-1])
         answer_url = response.url.split("?")[0] + "answers/?start=0&limit=20"
-        response.meta["item_collector"].add(("answers", item_loader, {"url": answer_url}))
+        return [("answers", item_loader, {"url": answer_url})]
 
     @enrich_wrapper
     def enrich_answers(self, item_loader, response):
@@ -163,7 +165,7 @@ class DoubanSpider(StructureSpider):
                     nodes.append(("replies", answer_item_loader, {"url": reply_url}))
             else:
                 item_loader.add_value("answers", answer_item_loader.load_item())
-        response.meta["item_collector"].extend(nodes)
+        return nodes
 
     @enrich_wrapper
     def enrich_replies(self, item_loader, response):
@@ -172,21 +174,21 @@ class DoubanSpider(StructureSpider):
         item_loader.add_value("replies", data["comments"])
 
     @enrich_wrapper
-    def enrich_reviews(self, item_loader, response):
-        self.logger.debug("Start to enrich_reviews. ")
+    def enrich_review_list(self, item_loader, response):
+        self.logger.debug("Start to enrich_review_list. ")
         nodes = list()
         next_url = xpath_exchange(response.xpath('//span[@class="next"]/a/@href'))
         if next_url:
-            nodes.append(("reviews", item_loader, {"url": response.urljoin(next_url)}))
+            nodes.append(("review_list", item_loader, {"url": response.urljoin(next_url)}))
         reviews = response.xpath('//div[@class="review-list"]/div/div[@class="main review-item"]')
         for review in reviews:
             nodes.append(
-                ("review", CustomLoader(item=ReviewItem()), {"url": xpath_exchange(review.xpath('header/h3/a/@href'))}))
-        response.meta["item_collector"].extend(nodes)
+                ("reviews", CustomLoader(item=ReviewItem()), {"url": xpath_exchange(review.xpath('header/h3/a/@href'))}))
+        return nodes
 
     @enrich_wrapper
-    def enrich_review(self, item_loader, response):
-        self.logger.debug("Start to enrich_review. ")
+    def enrich_reviews(self, item_loader, response):
+        self.logger.debug("Start to enrich_reviews. ")
         item_loader.add_xpath("title", '//h1/span/text()')
         item_loader.add_xpath("content", '//div[@id="link-report"]/div')
         item_loader.add_xpath("author", '//div[@class="article"]/div/div/header/a/span/text()')

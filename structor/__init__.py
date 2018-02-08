@@ -3,7 +3,7 @@ from .spider_feeder import SpiderFeeder
 from .check_status import main
 from .start_project import start as start_project, create as create_spider
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
 AUTHOR = "cn"
 

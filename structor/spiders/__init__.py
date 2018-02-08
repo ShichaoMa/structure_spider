@@ -190,12 +190,6 @@ class StructureSpider(Spider):
                 response.request.url,
                 "In parse_item: " + traceback.format_exc())
 
-    def yield_item_or_req(self, item_collector, response):
-        item_or_req = item_collector.collect(response, self)
-        if isinstance(item_or_req, Request):
-            return item_or_req
-        return self.process_forward(response, item_or_req)
-
     def parse_next(self, response):
         if response.status == 999:
             self.logger.error(
@@ -212,6 +206,12 @@ class StructureSpider(Spider):
                 response.meta['crawlid'],
                 response.request.url,
                 "In parse_next: " + traceback.format_exc())
+
+    def yield_item_or_req(self, item_collector, response):
+        item_or_req = item_collector.collect(response, self)
+        if isinstance(item_or_req, Request):
+            return item_or_req
+        return self.process_forward(response, item_or_req)
 
     def process_forward(self, response, item):
         self.logger.info(

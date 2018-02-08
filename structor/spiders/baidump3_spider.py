@@ -85,7 +85,7 @@ class BaiduMp3Spider(StructureSpider):
                                       int(time.time() * 1000), (re_search(r"song/(\d+)", response.url) or
                                       re_search(r"source_id: '(\d+)'", response.body)),
                                       int(time.time() * 1000))}))
-        response.meta["item_collector"].extend(node_list)
+        return node_list
 
     @enrich_wrapper
     def enrich_lyrics(self, item_loader, response):

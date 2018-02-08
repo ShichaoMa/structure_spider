@@ -4,9 +4,6 @@
 # Web Walker Settings
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # 测试专用
-import sys
-#sys.path.insert(0, "/home/ubuntu/myprojects/webWalker")
-#sys.path.insert(0, "log_to_kafka")
 import os
 import pkgutil
 

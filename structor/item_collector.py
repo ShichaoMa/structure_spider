@@ -1,6 +1,7 @@
 import copy
 
-from scrapy import Request, Item
+from scrapy import Item
+from .custom_request import Request
 
 
 class Node(object):
@@ -13,15 +14,15 @@ class Node(object):
         self.req_meta = req_meta
         if not enricher:
             enricher = "enrich_" + prop_name
-        self.enricher = getattr(spider, enricher) if isinstance(enricher, str) else enricher
+        self.enricher = enricher if isinstance(enricher, str) else enricher.__name__
         self.parent = parent
         self.children = list()
         self.enriched = False
         # 与父节点共用item_loader的节点不会在完成时生成item。
         if self.parent and self.parent.item_loader == item_loader:
-            self.do_not_load = False
-        else:
             self.do_not_load = True
+        else:
+            self.do_not_load = False
 
     def run(self, response, spider):
         """
@@ -33,7 +34,7 @@ class Node(object):
         :return:
         """
         if not self.enriched:
-            children = self.enricher(self.item_loader, response)
+            children = getattr(spider, self.enricher)(self.item_loader, response)
             self.enriched = True
             if children:
                 self.children.extend(Node(*child, parent=self, spider=spider) for child in children)
@@ -41,7 +42,7 @@ class Node(object):
 
     def dispatch(self, response):
         """
-        dispatch会调度产生item或Request或None
+        dispatch会调度产生请求/item/None
         当当前节点存在req_meta时，组建请求。
         当当前节点不存在req_meta时，遍历其子节点，查找req_meta，并调用子节点dispatch，返回其结果
         删除不存在req_meta的子节点
@@ -66,6 +67,12 @@ class Node(object):
                     self.children.remove(child)
         return None if self.do_not_load else self.item_loader.load_item(), self
 
+    def __str__(self):
+        return "<Node prop_name: {}, item_loader: {}, enricher: {} >" .format(
+            self.prop_name, self.item_loader, self.enricher)
+
+    __repr__ = __str__
+
 
 class ItemCollector(object):
     """
@@ -78,8 +85,8 @@ class ItemCollector(object):
 
     def collect(self, response, spider):
         """
-        item_collector收集的开始，每次请求返回一个请求或者item。
-        调用当前节点的run方法，返回一个请求或item或None及其被产生的节点(哪个节点产生了这个请求或item或None)。
+        item_collector收集的开始，每次收集返回一个请求或者item。
+        调用当前节点的run方法，返回一个请求/item/None及其被产生的节点(哪个节点产生了这个请求/item/None)。
         当返回为Item时，表示该节点及其子节点已经完成所有操作。将其赋值父节点的item_loader。
         当返回为Request时，表示该节点产生了一个新请求，返回该请求交付scrapy调度。
         当返回为None时，表示该节点已完成，但与其父节点共用item_loader，此时item_loader不会生成item。将当前节点指针指向其父节点。
@@ -95,6 +102,7 @@ class ItemCollector(object):
                 if self.current_node.parent:
                     self.current_node.parent.item_loader.add_value(self.current_node.prop_name, req_or_item)
                     req_or_item = None
+                self.current_node = self.current_node.parent
             elif req_or_item is None:
                 self.current_node = self.current_node.parent
         return req_or_item
