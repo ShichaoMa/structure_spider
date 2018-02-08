@@ -51,7 +51,7 @@ dev@ubuntu:~/myapp$ check zhaopin
 
 [个性化爬虫一键生成，想抓哪里点哪里！](https://zhuanlan.zhihu.com/p/33561576)
 
-[[structure_spider每周一练]：一键下载百度mp3](https://zhuanlan.zhihu.com/p/29076630)
+[scrapy进阶，组合多请求抓取Item利器ItemCollector详解！](https://zhuanlan.zhihu.com/p/33699058)
 
 
 
