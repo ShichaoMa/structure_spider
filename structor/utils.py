@@ -338,7 +338,9 @@ def url_path_arg_increment(pattern_str, url):
         path = re.sub(pattern, "\g<1>%s\g<3>"%(int(mth.group(2))+1), parts.path)
     else:
         page_num = int(first_page_num) + 1
-        path = re.sub(r"\((.*)\)(?:\(.*\))\((.*)\)", _repl_wrapper(parts.path, page_num), pattern).replace("\\", "")
+        path = re.sub(r"\((.*)\)(?:\(.*\))\((.*)\)",
+                      _repl_wrapper(parts.path, page_num),
+                      pattern).replace("\\", "")
     return urlunparse(parts._replace(path=path))
 
 

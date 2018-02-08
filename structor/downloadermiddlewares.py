@@ -66,7 +66,8 @@ class ProxyMiddleware(DownloaderBaseMiddleware):
             request.meta['proxy'] = proxy
             self.logger.debug("Use proxy %s to send request" % proxy)
             if self.settings.get("PROXY_ACCOUNT_PASSWORD"):
-                encoded_user_pass = base64.b64encode(self.settings.get("PROXY_ACCOUNT_PASSWORD").encode("utf-8"))
+                encoded_user_pass = \
+                    base64.b64encode(self.settings.get("PROXY_ACCOUNT_PASSWORD").encode("utf-8"))
                 request.headers['Proxy-Authorization'] = b'Basic ' + encoded_user_pass
 
 
@@ -80,7 +81,8 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, DownloaderBaseMiddleware):
             ua = settings.get('USER_AGENT', user_agent)
             self.user_agent_list = [ua]
         else:
-            self.user_agent_list = [i.strip() for i in user_agent_list.decode("utf-8").split('\n') if i.strip()]
+            self.user_agent_list = \
+                [i.strip() for i in user_agent_list.decode("utf-8").split('\n') if i.strip()]
 
         self.default_agent = user_agent
         self.choicer = self.choice()
@@ -105,7 +107,8 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, DownloaderBaseMiddleware):
     def process_request(self, request, spider):
         if self.user_agent:
             request.headers['User-Agent'] = self.user_agent
-            self.logger.debug('User-Agent: {} {}'.format(request.headers.get('User-Agent'), request))
+            self.logger.debug(
+                'User-Agent: {} {}'.format(request.headers.get('User-Agent'), request))
         else:
             self.logger.error('User-Agent: ERROR with user agent list')
 
@@ -145,7 +148,8 @@ class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
         else:
             if request.callback == spider.parse:
                 self.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-            self.logger.error("Gave up redirecting %s (failed %d times): %s" % (request.url, redirects, reason))
+            self.logger.error(
+                "Gave up redirecting %s (failed %d times): %s" % (request.url, redirects, reason))
             spider.crawler.stats.set_failed_download(request.meta['crawlid'], request.url, reason)
             if "item_collector" in request.meta:
                 return HtmlResponse(request.url, body=b"<html></html>", status=999, request=request)
@@ -223,10 +227,12 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
     def process_exception(self, request, exception, spider):
         if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
                 and not request.meta.get('dont_retry', False):
-            return self._retry(request, "%s:%s" % (exception.__class__.__name__, exception), spider)
+            return self._retry(
+                request, "%s:%s" % (exception.__class__.__name__, exception), spider)
         else:
             self.logger.error("In retry request error %s" % traceback.format_exc())
-            raise IgnoreRequest("%s:%s unhandle error. " % (exception.__class__.__name__, exception))
+            raise IgnoreRequest(
+                "%s:%s unhandle error. " % (exception.__class__.__name__, exception))
 
     def _retry(self, request, reason, spider):
         spider.change_proxy = True
@@ -235,13 +241,16 @@ class CustomRetryMiddleware(DownloaderBaseMiddleware, RetryMiddleware):
         if retries <= self.max_retry_times:
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
-            retryreq.meta['priority'] = retryreq.meta['priority'] + self.settings.get("REDIRECT_PRIORITY_ADJUST")
-            self.logger.debug("Reason: %s of %s times for %s to retry. " % (reason, retries, request.url))
+            retryreq.meta['priority'] = \
+                retryreq.meta['priority'] + self.settings.get("REDIRECT_PRIORITY_ADJUST")
+            self.logger.debug(
+                "Reason: %s of %s times for %s to retry. " % (reason, retries, request.url))
             return retryreq
         else:
             if request.callback == spider.parse:
                 spider.crawler.stats.inc_total_pages(request.meta['crawlid'])
-            self.logger.error("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
+            self.logger.error(
+                "Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
             spider.crawler.stats.set_failed_download(request.meta['crawlid'], request.url, reason)
             if "item_collector" in request.meta:
                 return HtmlResponse(request.url, body=b"<html></html>", status=999, request=request)

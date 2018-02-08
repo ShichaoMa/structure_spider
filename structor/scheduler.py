@@ -17,7 +17,7 @@ class Scheduler(object):
             from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.getint("REDIS_PORT"))
-        self.queue_name = self.queue_name = self.settings.get("TASK_QUEUE_TEMPLATE", "%s:request:queue")
+        self.queue_name = None
         self.queues = {}
         self.request_interval = 60/self.settings.getint("SPEED", 60)
         self.last_acs_time = time.time()
@@ -28,17 +28,21 @@ class Scheduler(object):
 
     def open(self, spider):
         self.spider = spider
-        self.queue_name = self.queue_name % spider.name
+        self.queue_name = \
+            self.settings.get("TASK_QUEUE_TEMPLATE", "%s:request:queue") % spider.name
         spider.set_redis(self.redis_conn)
 
     def enqueue_request(self, request):
         request.callback = getattr(request.callback, "__name__", request.callback)
         request.errback = getattr(request.errback, "__name__", request.errback)
-        self.redis_conn.zadd(self.queue_name, pickle.dumps(request), -int(request.meta["priority"]))
-        self.logger.debug("Crawlid: %s, url: %s added to queue. " % (request.meta['crawlid'], request.url))
+        self.redis_conn.zadd(
+            self.queue_name, pickle.dumps(request), -int(request.meta["priority"]))
+        self.logger.debug(
+            "Crawlid: %s, url: %s added to queue. " % (request.meta['crawlid'], request.url))
 
     def next_request(self):
-        self.logger.debug("length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
+        self.logger.debug(
+            "length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
         item = None
         if time.time() - self.request_interval < self.last_acs_time:
             return item

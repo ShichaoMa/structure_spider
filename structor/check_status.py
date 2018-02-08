@@ -22,7 +22,8 @@ def start(crawlid, host, port, custom):
     redis_conn = Redis(host, port)
     key = "crawlid:%s" % crawlid
     data = redis_conn.hgetall(key)
-    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x.decode() if isinstance(x, bytes) else x, "failed_download_*")]
+    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(
+        x.decode() if isinstance(x, bytes) else x, "failed_download_*")]
     format(data)
     for fk in failed_keys:
         fk = fk.decode() if isinstance(fk, bytes) else fk

@@ -58,8 +58,8 @@ class Start(Command):
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
-        print("New structure-spider project %r, using template directory %r, created in:" % \
-              (project_name, self.templates_dir))
+        print("New structure-spider project %r, using template directory %r, created in:" % (
+            project_name, self.templates_dir))
         print("    %s\n" % abspath(project_dir))
         print("You can start the spider with:")
         print("    cd %s" % project_dir)
@@ -219,8 +219,10 @@ class Create(Command):
                              class_name=class_name,
                              spider_name=self.args.spider,
                              props=parsed_props,
-                             item_pattern=(self.args.item_pattern, '"' if self.args.item_pattern.count("'") else "'"),
-                             page_pattern=(self.args.page_pattern, '"' if self.args.page_pattern.count("'") else "'"),
+                             item_pattern=(
+                                 self.args.item_pattern, '"' if self.args.item_pattern.count("'") else "'"),
+                             page_pattern=(
+                                 self.args.page_pattern, '"' if self.args.page_pattern.count("'") else "'"),
                              )
                 )
 
