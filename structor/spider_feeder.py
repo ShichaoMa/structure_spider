@@ -4,7 +4,7 @@ import pickle
 import argparse
 import traceback
 
-from scrapy import Request
+from .custom_request import Request
 
 
 class SpiderFeeder(object):
