@@ -48,5 +48,8 @@ dev@ubuntu:~/myapp$ check zhaopin
 更多资源:
 
 [[structure_spider每周一练]：一键下载百度mp3](https://zhuanlan.zhihu.com/p/29076630)
+[个性化爬虫一键生成，想抓哪里点哪里！](https://zhuanlan.zhihu.com/p/33561576)
+[[structure_spider每周一练]：一键下载百度mp3](https://zhuanlan.zhihu.com/p/29076630)
+
 
 
