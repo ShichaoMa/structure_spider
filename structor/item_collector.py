@@ -74,6 +74,62 @@ class Node(object):
     __repr__ = __str__
 
 
+class RequestTree(object):
+    """
+    请求树的遍历方案2，由于框架使用了redis做请求持久化，所以无法在框架中使用，使用方法参见test
+    """
+    def __init__(self, prop_name, item_loader, req_meta, enricher=None, parent=None, spider=None):
+        self.prop_name = prop_name
+        self.item_loader = item_loader
+        self.req_meta = req_meta
+        if not enricher:
+            enricher = "enrich_" + prop_name
+        self.enricher = enricher if isinstance(enricher, str) else enricher.__name__
+        self.parent = parent
+        self.children = list()
+        self.enriched = False
+        # 与父节点共用item_loader的节点不会在完成时生成item。
+        if self.parent and self.parent.item_loader == item_loader:
+            self.do_not_load = True
+        else:
+            self.do_not_load = False
+
+    def __iter__(self):
+        response, spider = yield None
+        while True:
+            if self.req_meta:
+                meta = response.request.meta.copy()
+                self.req_meta.pop("callback", None)
+                self.req_meta.pop("errback", None)
+                custom_meta = self.req_meta.pop("meta", {})
+                meta["priority"] += 1
+                meta.update(custom_meta)
+                kw = copy.deepcopy(self.req_meta)
+                self.req_meta.clear()
+                response, spider = yield Request(meta=meta, callback="parse_next", errback="errback", **kw)
+            if not self.enriched:
+                children = getattr(spider, self.enricher)(self.item_loader, response)
+                self.enriched = True
+                if children:
+                    self.children.extend(RequestTree(*child, parent=self, spider=spider) for child in children)
+            if self.children:
+                for child in self.children[:]:
+                    item_or_req = yield from iter(child)
+                    if isinstance(item_or_req, Item):
+                        self.children.remove(child)
+                        self.item_loader.add_value(child.prop_name, item_or_req)
+                    else:
+                        yield item_or_req
+            else:
+                return None if self.do_not_load else self.item_loader.load_item()
+
+    def __str__(self):
+        return "<Node prop_name: {}, item_loader: {}, enricher: {} >" .format(
+            self.prop_name, self.item_loader, self.enricher)
+
+    __repr__ = __str__
+
+
 class ItemCollector(object):
     """
     ItemCollector:
