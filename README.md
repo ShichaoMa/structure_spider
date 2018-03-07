@@ -1,6 +1,7 @@
 # 结构化爬虫
 通过组建Item请求树抓取结构化数据
-![](https://github.com/ShichaoMa/structure_spider/blob/master/resources/item_collector.jpg)
+
+![](https://github.com/ShichaoMa/structure_spider/blob/master/resources/item-collector.jpg)
 # USAGE
 ### 安装structure_spider
 ```
