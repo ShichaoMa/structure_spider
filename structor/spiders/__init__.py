@@ -45,7 +45,8 @@ class StructureSpider(Spider):
 
     def log_err(self, func_name, *args):
         self.logger.error(
-            "Error in %s: %s. " % (func_name, "".join(traceback.format_exception(*args))))
+            "Error in %s: %s. " % (
+                func_name, "".join(traceback.format_exception(*args))))
         return True
 
     def _set_crawler(self, crawler):
@@ -63,7 +64,8 @@ class StructureSpider(Spider):
 
     def extract_item_urls(self, response):
         return [response.urljoin(x)
-                for x in set(response.xpath("|".join(self.item_pattern)).extract())]
+                for x in set(
+                response.xpath("|".join(self.item_pattern)).extract())]
 
     def extract_page_url(self, response, effective_urls, item_urls):
         """
@@ -83,10 +85,12 @@ class StructureSpider(Spider):
             elif xpath.count("/") > 1:
                 next_page_url = reduce(
                     lambda x, y: y,
-                    (urljoin(page_url, x) for x in set(response.xpath(xpath).extract())),
+                    (urljoin(page_url, x)
+                     for x in set(response.xpath(xpath).extract())),
                     None)
             else:
-                next_page_url = url_item_arg_increment(xpath, page_url, len(item_urls))
+                next_page_url = url_item_arg_increment(
+                    xpath, page_url, len(item_urls))
         else:
             next_page_url = None
         return next_page_url
@@ -99,7 +103,8 @@ class StructureSpider(Spider):
         item_loader.add_value("timestamp", time.strftime("%Y%m%d%H%M%S"))
         item_loader.add_value('status_code', response.status)
         item_loader.add_value("status_msg", response_status_message(response.status))
-        item_loader.add_value('domain', urlparse(response.url).hostname.split(".", 1)[1])
+        item_loader.add_value(
+            'domain', urlparse(response.url).hostname.split(".", 1)[1])
         item_loader.add_value('crawlid', response.meta.get('crawlid'))
         item_loader.add_value('response_url', response.url)
 

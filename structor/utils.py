@@ -87,7 +87,8 @@ class CustomLoader(ItemLoader):
             try:
                 self.add_value(field_name, self.selector.re(regex), **kwargs)
             except json.decoder.JSONDecodeError:
-                self.add_value(field_name, self.selector.re(regex, False), **kwargs)
+                self.add_value(
+                    field_name, self.selector.re(regex, False), **kwargs)
 
     def load_item(self):
         """
@@ -96,7 +97,8 @@ class CustomLoader(ItemLoader):
         """
         item = self.item
         skip_fields = []
-        for field_name, field in sorted(item.fields.items(), key=lambda item: item[1].get("order", 0)):
+        for field_name, field in sorted(
+                item.fields.items(), key=lambda item: item[1].get("order", 0)):
             value = self.get_output_value(field_name)
             if field.get("skip"):
                 skip_fields.append(field_name)
@@ -201,9 +203,11 @@ class ItemCollector(object):
                     prop, current_item_loader, kwargs = self.current_node
                     if last_item_loader is not current_item_loader:
                         try:
-                            current_item_loader.add_value(last_prop, last_item_loader.load_item())
+                            current_item_loader.add_value(
+                                last_prop, last_item_loader.load_item())
                         except KeyError:
-                            current_item_loader.add_value(prop, last_item_loader.load_item())
+                            current_item_loader.add_value(
+                                prop, last_item_loader.load_item())
                 if not kwargs:
                     if self.check_deep_level_finished():
                         self.pop()
@@ -229,7 +233,8 @@ class ItemCollector(object):
                 meta.update(custom_meta)
                 kw = copy.deepcopy(kwargs)
                 kwargs.clear()
-                return Request(meta=meta, callback="parse_next", errback="errback", **kw)
+                return Request(
+                    meta=meta, callback="parse_next", errback="errback", **kw)
 
 
 class CustomLogger(Logger):
@@ -335,7 +340,8 @@ def url_path_arg_increment(pattern_str, url):
     first_page_num, pattern = pattern_str.split("~=", 1)
     mth = re.search(pattern, parts.path)
     if mth:
-        path = re.sub(pattern, "\g<1>%s\g<3>" % (int(mth.group(2))+1), parts.path)
+        path = re.sub(
+            pattern, "\g<1>%s\g<3>" % (int(mth.group(2))+1), parts.path)
     else:
         page_num = int(first_page_num) + 1
         path = re.sub(r"\((.*)\)(?:\(.*\))\((.*)\)",

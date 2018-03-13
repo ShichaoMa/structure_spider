@@ -28,21 +28,26 @@ class Scheduler(object):
 
     def open(self, spider):
         self.spider = spider
-        self.queue_name = \
-            self.settings.get("TASK_QUEUE_TEMPLATE", "%s:request:queue") % spider.name
+        self.queue_name = self.settings.get(
+            "TASK_QUEUE_TEMPLATE", "%s:request:queue") % spider.name
         spider.set_redis(self.redis_conn)
 
     def enqueue_request(self, request):
-        request.callback = getattr(request.callback, "__name__", request.callback)
-        request.errback = getattr(request.errback, "__name__", request.errback)
+        request.callback = getattr(
+            request.callback, "__name__", request.callback)
+        request.errback = getattr(
+            request.errback, "__name__", request.errback)
         self.redis_conn.zadd(
-            self.queue_name, pickle.dumps(request), -int(request.meta["priority"]))
-        self.logger.debug(
-            "Crawlid: %s, url: %s added to queue. " % (request.meta['crawlid'], request.url))
+            self.queue_name,
+            pickle.dumps(request),
+            -int(request.meta["priority"]))
+        self.logger.debug("Crawlid: %s, url: %s added to queue. " % (
+            request.meta['crawlid'], request.url))
 
     def next_request(self):
         self.logger.debug(
-            "length of queue %s is %s" % (self.queue_name, self.redis_conn.zcard(self.queue_name)))
+            "length of queue %s is %s" % (
+                self.queue_name, self.redis_conn.zcard(self.queue_name)))
         item = None
         if time.time() - self.request_interval < self.last_acs_time:
             return item
@@ -52,7 +57,8 @@ class Scheduler(object):
         else:
             pipe = self.redis_conn.pipeline()
             pipe.multi()
-            pipe.zrange(self.queue_name, 0, 0).zremrangebyrank(self.queue_name, 0, 0)
+            pipe.zrange(self.queue_name, 0, 0).zremrangebyrank(
+                self.queue_name, 0, 0)
             result, _ = pipe.execute()
             if result:
                 item = result[0]
@@ -60,8 +66,10 @@ class Scheduler(object):
         if item:
             self.last_acs_time = time.time()
             request = pickle.loads(item)
-            request.callback = request.callback and getattr(self.spider, request.callback)
-            request.errback = request.errback and getattr(self.spider, request.errback)
+            request.callback = request.callback and getattr(
+                self.spider, request.callback)
+            request.errback = request.errback and getattr(
+                self.spider, request.errback)
             return request
 
     def close(self, reason):

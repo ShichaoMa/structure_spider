@@ -4,10 +4,12 @@ spider编写规则
 1 spider必须继承自StructureSpider
 2 若执行分类抓取则需要配置item_pattern = (), page_pattern = ()，其中：
     1）item_pattern元组中的元素为分类页中每个item链接所对应的xpath表达式
-    2）page_pattern元组中的元素可以是下一页链接所所对应的正则表达式，或者其它规则，详见https://github.com/ShichaoMa/structure_spider/wiki/%08page_partten%E5%92%8Citem_partten%E7%BC%96%E5%86%99%E8%A7%84%E5%88%99
+    2）page_pattern元组中的元素可以是下一页链接所所对应的正则表达式，或者其它规则，
+    详见https://github.com/ShichaoMa/structure_spider/wiki/%08page_partten%E5%92%8Citem_partten%E7%BC%96%E5%86%99%E8%A7%84%E5%88%99
 3 提供get_base_loader静态方法，传入response，返回CustomLoader对应一个Item
 4 提供enrich_data方法，必须被enrich_wrapper装饰，其中：
-    1）传入item_loader, response，使用item_loader的方法(add_value, add_xpath, add_re)添加要抓取的属性名及其对应表达式或值。
+    1）传入item_loader, response，使用item_loader的方法(add_value, add_xpath, add_re)
+    添加要抓取的属性名及其对应表达式或值。
     2）如该次渲染需要产生新的请求，则通过response.meta["item_collector"]提供的(add, extend)方法，
        则将(prop, item_loader, request_meta)添加到item_collector中。其中：
         prop: 指下次请求获取的全部字段如果做为一个子item返回时，子item在其父item中对应的字段名称。
@@ -45,7 +47,8 @@ class BaiduMp3Spider(StructureSpider):
         next_page_url = "http://music.baidu.com/data/user/getsongs"
         query = urldecode(urlparse(response.url).query)
         query.setdefault("ting_uid", re_search(r"artist/(\d+)", response.url))
-        query.setdefault("hotmax", re_search(r"var hotbarMax = (\d+)", response.body))
+        query.setdefault(
+            "hotmax", re_search(r"var hotbarMax = (\d+)", response.body))
         query["order"] = "hot"
         query[".r"] = str(random.random()) + str(int(time.time() * 1000))
         query.setdefault("pay", "")
@@ -57,7 +60,8 @@ class BaiduMp3Spider(StructureSpider):
         except Exception:
             html = response.body
         sel = Selector(text=html)
-        return [response.urljoin(x) for x in set(sel.xpath("|".join(self.item_pattern)).extract())]
+        return [response.urljoin(x)
+                for x in set(sel.xpath("|".join(self.item_pattern)).extract())]
 
     @staticmethod
     def get_base_loader(response):
@@ -69,21 +73,28 @@ class BaiduMp3Spider(StructureSpider):
         item_loader.add_xpath("name", '//h2/span[@class="name"]/text()')
         item_loader.add_value("id", response.url, re=r"song/(\d+)")
         item_loader.add_re("id", r"source_id: '(\d+)'")
-        item_loader.add_xpath("singer", '//ul/li/span[@class="author_list"]/@title')
-        item_loader.add_xpath("album", '//ul/li[contains(text(), "专辑")]/a/text()')
-        item_loader.add_xpath("tags", '//ul/li[@class="clearfix tag"]/a/text()')
+        item_loader.add_xpath(
+            "singer", '//ul/li/span[@class="author_list"]/@title')
+        item_loader.add_xpath(
+            "album", '//ul/li[contains(text(), "专辑")]/a/text()')
+        item_loader.add_xpath(
+            "tags", '//ul/li[@class="clearfix tag"]/a/text()')
         node_list = list()
         # 添加抓取歌词的请求
-        lyrics_url = "".join(response.xpath('//div[@id="lyricCont"]/@data-lrclink').extract()).strip()
+        lyrics_url = "".join(response.xpath(
+            '//div[@id="lyricCont"]/@data-lrclink').extract()).strip()
         if lyrics_url:
             node_list.append(("lyrics", item_loader,
                               {"url": lyrics_url}))
 
         node_list.append(("source_url", item_loader,
-                          {"url": "http://tingapi.ting.baidu.com/v1/restserver/ting?method=baidu.ting.song.play&"
-                                  "format=jsonp&callback=jQuery_%s&songid=%s&_=%s" % (
-                                      int(time.time() * 1000), (re_search(r"song/(\d+)", response.url) or
-                                      re_search(r"source_id: '(\d+)'", response.body)),
+                          {"url": "http://tingapi.ting.baidu.com/v1/restserver/"
+                                  "ting?method=baidu.ting.song.play&format=jsonp"
+                                  "&callback=jQuery_%s&songid=%s&_=%s" % (
+                                      int(time.time() * 1000),
+                                      (re_search(r"song/(\d+)", response.url) or
+                                      re_search(
+                                          r"source_id: '(\d+)'", response.body)),
                                       int(time.time() * 1000))}))
         return node_list
 

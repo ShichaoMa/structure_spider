@@ -8,7 +8,8 @@ from .custom_request import Request
 
 
 class SpiderFeeder(object):
-    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host, custom):
+    def __init__(self, crawlid, spiderid, url,
+                 urls_file, priority, port, host, custom):
         self.crawlid = crawlid
         self.spiderid = spiderid
         self.url = url
@@ -32,21 +33,29 @@ class SpiderFeeder(object):
     def parse_args(cls):
         parser = argparse.ArgumentParser(description="usage: %prog [options]")
         parser.add_argument(
-            '-rh', "--redis-host", dest="host", type=str, default="127.0.0.1", help="Redis host to feed in. ")
+            '-rh', "--redis-host", dest="host", type=str,
+            default="127.0.0.1", help="Redis host to feed in. ")
         parser.add_argument(
-            '-rp', "--redis-port", dest="port", type=int, default=6379, help="Redis port to feed in. ")
+            '-rp', "--redis-port", dest="port", type=int,
+            default=6379, help="Redis port to feed in. ")
         parser.add_argument(
-            '-u', '--url', type=str, help="The url to crawl, a list of products. ")
+            '-u', '--url', type=str,
+            help="The url to crawl, a list of products. ")
         parser.add_argument(
-            '-uf', '--urls-file', type=str, help="The urlsfile to crawl, single product. ")
+            '-uf', '--urls-file', type=str,
+            help="The urlsfile to crawl, single product. ")
         parser.add_argument(
-            '-c', '--crawlid', required=True, type=str, help="An unique Id for a crawl task. ")
+            '-c', '--crawlid', required=True, type=str,
+            help="An unique Id for a crawl task. ")
         parser.add_argument(
-            '-s', '--spiderid', required=True, type=str, help="The website you wanna crawl. ")
+            '-s', '--spiderid', required=True, type=str,
+            help="The website you wanna crawl. ")
         parser.add_argument(
-            '-p', '--priority', type=int, default=100, help="Feed in the task queue with priority. ")
+            '-p', '--priority', type=int, default=100,
+            help="Feed in the task queue with priority. ")
         parser.add_argument(
-            '--custom', action="store_true", help="Use the custom redis whether or not. ")
+            '--custom', action="store_true",
+            help="Use the custom redis whether or not. ")
         return cls(**vars(parser.parse_args()))
 
     def clean_previous_task(self, crawlid):
@@ -71,10 +80,13 @@ class SpiderFeeder(object):
                               "spiderid": self.spiderid,
                               "priority": self.priority}
                     )
-                    self.failed_count += self.feed(self.get_name(), pickle.dumps(req))
+                    self.failed_count += self.feed(
+                        self.get_name(), pickle.dumps(req))
                     success_rate, failed_rate = \
-                        self.show_process_line(lines_count, index + 1, self.failed_count)
-                self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
+                        self.show_process_line(
+                            lines_count, index + 1, self.failed_count)
+                self.redis_conn.hset(
+                    "crawlid:%s" % self.crawlid, "total_pages", lines_count)
         # 分类抓取
         else:
             url_list = self.url.split("     ")
@@ -88,10 +100,12 @@ class SpiderFeeder(object):
                           "spiderid": self.spiderid,
                           "priority": self.priority}
                 )
-                self.failed_count += self.feed(self.get_name(), pickle.dumps(req))
-                sucess_rate, failed_rate = \
-                    self.show_process_line(lines_count, index + 1, self.failed_count)
-        print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%" % (success_rate, failed_rate))
+                self.failed_count += self.feed(
+                    self.get_name(), pickle.dumps(req))
+                sucess_rate, failed_rate = self.show_process_line(
+                    lines_count, index + 1, self.failed_count)
+        print("\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%" % (
+            success_rate, failed_rate))
 
     def get_name(self):
         return "{sid}:request:queue".format(sid=self.spiderid)
@@ -136,7 +150,8 @@ class SpiderFeeder(object):
             else:
                 print("\r", str_success_rate, "")
                 print("%s%s" % (int(success_rate * 50 / 100) * '\033[42m \033[0m',
-                                int(failed_rate * 50 / 100) * '\033[41m \033[0m'), str_failed_rate)
+                                int(failed_rate * 50 / 100) * '\033[41m \033[0m'),
+                      str_failed_rate)
         return success_rate, failed_rate
 
 

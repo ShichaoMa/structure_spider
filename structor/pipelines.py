@@ -40,9 +40,12 @@ class Mp3DownloadPipeline(BasePipeline):
 
     def download(self, url, name):
         resp = self.downloader.get(url, stream=True)
-        filename = unquote(re_search(r'filename="(.*?)"(?:;|$)', resp.headers.get("Content-Disposition", ""))) or name
+        filename = unquote(re_search(
+            r'filename="(.*?)"(?:;|$)',
+            resp.headers.get("Content-Disposition", ""))) or name
         with open(filename, "wb") as f:
-            for chunk in self.downloader.get(url, stream=True).iter_content(chunk_size=1024):
+            for chunk in self.downloader.get(
+                    url, stream=True).iter_content(chunk_size=1024):
                 f.write(chunk)
 
     def process_item(self, item, spider):
@@ -55,7 +58,9 @@ class MongoPipeline(BasePipeline):
     def __init__(self, settings):
         super(MongoPipeline, self).__init__(settings)
         import pymongo
-        self.db = pymongo.MongoClient(settings.get("MONGO_HOST"), settings.get("MONGO_PORT"))[settings.get("MONGO_DB")]
+        self.db = pymongo.MongoClient(
+            settings.get("MONGO_HOST"),
+            settings.get("MONGO_PORT"))[settings.get("MONGO_DB")]
         self.col = self.db[settings.get("MONGO_TABLE")]
 
     def process_item(self, item, spider):

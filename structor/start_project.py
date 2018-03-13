@@ -20,12 +20,14 @@ class Command(_Command):
         if self.args.templates:
             self.settings["TEMPLATES_DIR"] = self.args.templates
         else:
-            self.settings["TEMPLATES_DIR"] = join(abspath(dirname(__file__)), "templates")
+            self.settings["TEMPLATES_DIR"] = join(
+                abspath(dirname(__file__)), "templates")
 
     def parse_args(self):
         parser = ArgumentParser()
         self.enrich_parser_argument(parser)
-        parser.add_argument("-t", "--templates", help="Specify a templates path. ")
+        parser.add_argument(
+            "-t", "--templates", help="Specify a templates path. ")
         self.args = parser.parse_args()
 
     def enrich_parser_argument(self, parser):
@@ -43,7 +45,8 @@ class Start(Command):
 
         if exists(join(project_dir, 'scrapy.cfg')):
             self.exitcode = 1
-            print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
+            print(
+                'Error: scrapy.cfg already exists in %s' % abspath(project_dir))
             return
 
         if not self._is_valid_name(project_name):
@@ -58,7 +61,8 @@ class Start(Command):
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
-        print("New structure-spider project %r, using template directory %r, created in:" % (
+        print("New structure-spider project %r, "
+              "using template directory %r, created in:" % (
             project_name, self.templates_dir))
         print("    %s\n" % abspath(project_dir))
         print("You can start the spider with:")
@@ -76,7 +80,8 @@ class Jinja2Template(object):
     settings = {} #used in prepare()
     defaults = {} #used in render()
 
-    def __init__(self, source=None, name=None, lookup=[], encoding='utf8', **settings):
+    def __init__(self, source=None, name=None,
+                 lookup=[], encoding='utf8', **settings):
         """ Create a new template.
         If the source parameter (str or buffer) is missing, the name argument
         is used to guess a template filename. Subclasses can assume that
@@ -129,8 +134,9 @@ class Jinja2Template(object):
     def prepare(self, filters=None, tests=None, globals={}, **kwargs):
         from jinja2 import Environment, FunctionLoader
         if 'prefix' in kwargs: # TODO: to be removed after a while
-            raise RuntimeError('The keyword argument `prefix` has been removed. '
-                'Use the full jinja2 environment name line_statement_prefix instead.')
+            raise RuntimeError('The keyword argument `prefix` has been removed.'
+                               ' Use the full jinja2 environment name '
+                               'line_statement_prefix instead.')
         self.env = Environment(loader=FunctionLoader(self.loader), **kwargs)
         if filters: self.env.filters.update(filters)
         if tests: self.env.tests.update(tests)
@@ -212,7 +218,8 @@ class Create(Command):
                 self.exitcode = 1
                 print("Error dir! ")
                 exit(1)
-            with open("%ss/%s_%s.py" % (entity, class_name.lower(), entity), "w") as f:
+            with open("%ss/%s_%s.py" % (
+                    entity, class_name.lower(), entity), "w") as f:
                 f.write(
                     template(entity + ".py.tmpl",
                              template_lookup=templates_dir,
@@ -220,22 +227,28 @@ class Create(Command):
                              spider_name=self.args.spider,
                              props=parsed_props,
                              item_pattern=(
-                                 self.args.item_pattern, '"' if self.args.item_pattern.count("'") else "'"),
+                                 self.args.item_pattern, '"'
+                                 if self.args.item_pattern.count("'") else "'"),
                              page_pattern=(
-                                 self.args.page_pattern, '"' if self.args.page_pattern.count("'") else "'"),
+                                 self.args.page_pattern, '"'
+                                 if self.args.page_pattern.count("'") else "'"),
                              )
                 )
 
-        print("%sSpdier and %sItem have been created. "%(class_name, class_name))
+        print(
+            "%sSpdier and %sItem have been created." % (class_name, class_name))
 
     def enrich_parser_argument(self, parser):
         parser.add_argument("-s", "--spider", required=True, help="Spider name")
         parser.add_argument("-ip", "--item_pattern", default="",
-                            help="Spider item pattern: xpath expression for acquire item link. ")
+                            help="Spider item pattern:"
+                                 " xpath expression for acquire item link. ")
         parser.add_argument("-pp", "--page_pattern", default="",
-                            help="Spider page pattern: expression for acquire next page link. ")
+                            help="Spider page pattern: "
+                                 "expression for acquire next page link. ")
         parser.add_argument("props", nargs="+",
-                            help="prop name and re/css/xpath expression pairs, eg: title=//h1/text()")
+                            help="prop name and re/css/xpath expression pairs, "
+                                 "eg: title=//h1/text()")
 
 
 def create():

@@ -35,14 +35,17 @@ class StatsCollector(MemoryStatsCollector):
 
     def set_failed_download(self, crawlid, url, reason, _type="pages"):
         with ExceptContext():
-            self.redis_conn.hincrby("crawlid:%s" % crawlid, "failed_download_%s" % _type, 1)
+            self.redis_conn.hincrby(
+                "crawlid:%s" % crawlid, "failed_download_%s" % _type, 1)
             self.update(crawlid)
             self.set_failed(crawlid, reason, url, _type)
 
     def set_failed(self, crawlid, url, reason, _type="pages"):
         with ExceptContext():
-            self.redis_conn.hset("failed_download_%s:%s" % (_type, crawlid), url, reason)
-            self.redis_conn.expire("failed_download_%s:%s" % (_type, crawlid), 60 * 60 * 24 * 2)
+            self.redis_conn.hset(
+                "failed_download_%s:%s" % (_type, crawlid), url, reason)
+            self.redis_conn.expire(
+                "failed_download_%s:%s" % (_type, crawlid), 60 * 60 * 24 * 2)
 
     def inc_total_pages(self, crawlid, num=1):
         with ExceptContext():
