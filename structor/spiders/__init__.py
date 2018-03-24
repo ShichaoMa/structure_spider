@@ -146,7 +146,7 @@ class StructureSpider(Spider):
             self.crawler.stats.set_failed_download(
                 response.meta['crawlid'],
                 response.request.url,
-                "In parse: " + traceback.format_exc())
+                "In parse: " + "".join(traceback.format_exception(*ec.err_info)))
 
     @staticmethod
     def gen_requests(url_metas, callback, response):
@@ -193,7 +193,7 @@ class StructureSpider(Spider):
             self.crawler.stats.set_failed_download(
                 response.meta['crawlid'],
                 response.request.url,
-                "In parse_item: " + traceback.format_exc())
+                "In parse_item: " + "".join(traceback.format_exception(*ec.err_info)))
 
     def parse_next(self, response):
         if response.status == 999:
@@ -210,7 +210,7 @@ class StructureSpider(Spider):
             self.crawler.stats.set_failed_download(
                 response.meta['crawlid'],
                 response.request.url,
-                "In parse_next: " + traceback.format_exc())
+                "In parse_next: " + "".join(traceback.format_exception(*ec.err_info)))
 
     def yield_item_or_req(self, item_collector, response):
         item_or_req = item_collector.collect(response, self)
