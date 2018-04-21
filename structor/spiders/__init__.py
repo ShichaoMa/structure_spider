@@ -222,7 +222,7 @@ class StructureSpider(Spider):
         self.logger.info(
             "crawlid:%s, id: %s, %s requests send for successful yield item" % (
             item.get("crawlid"),
-            item.get("id", "unknow"),
+            item.get("id", "unknown"),
             response.meta.get("request_count_per_item", 1)))
         self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
         return item

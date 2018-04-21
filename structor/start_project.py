@@ -209,9 +209,11 @@ class Create(Command):
             if prop.count("="):
                 p, e = prop.split("=", 1)
                 sep = '"' if e.count("'") else "'"
-                parsed_props[p] = (self.guess_type(e), e, sep)
+                type = self.guess_type(e)
+                prefix = "r" if type == "re" else ""
+                parsed_props[p] = (prefix, type, e, sep)
             else:
-                parsed_props[prop] = ("xpath", "", "'")
+                parsed_props[prop] = ("", "xpath", "", "'")
 
         for entity in entities:
             if not exists(join(current_dir, "%ss" % entity)):

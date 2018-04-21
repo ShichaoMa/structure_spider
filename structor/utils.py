@@ -74,18 +74,20 @@ class CustomLoader(ItemLoader):
     """
     default_output_processor = Compose(TakeFirst(), strip)
 
-    def add_re(self, field_name, regex, **kwargs):
+    def add_re(self, field_name, regex, *processors, **kwargs):
         """
         自实现add_re方法
-        :param field_name:
-        :param regex:
-        :param kwargs:
-        :return:
+        :param field_name: 
+        :param regex: 
+        :param processors: 
+        :param kwargs: 
+        :return: 
         """
         regexs = arg_to_iter(regex)
         for regex in regexs:
             try:
-                self.add_value(field_name, self.selector.re(regex), **kwargs)
+                self.add_value(
+                    field_name, self.selector.re(regex), *processors, **kwargs)
             except json.decoder.JSONDecodeError:
                 self.add_value(
                     field_name, self.selector.re(regex, False), **kwargs)
