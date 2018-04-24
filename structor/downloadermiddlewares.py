@@ -98,6 +98,8 @@ class CustomUserAgentMiddleware(DownloaderBaseMiddleware):
 class CustomRedirectMiddleware(DownloaderBaseMiddleware, RedirectMiddleware):
     def __init__(self, settings):
         super(CustomRedirectMiddleware, self).__init__(settings)
+        self.max_redirect_times = self.settings.getint("REDIRECT_MAX_TIMES")
+        self.priority_adjust = self.settings.getint("REDIRECT_PRIORITY_ADJUST")
 
     def _redirect(self, redirected, request, spider, reason):
         reason = response_status_message(reason)
