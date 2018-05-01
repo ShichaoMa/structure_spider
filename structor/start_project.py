@@ -54,7 +54,7 @@ class Start(Command):
             return
 
         self._copytree(self.templates_dir, abspath(project_dir))
-        move(join(project_dir, 'module'), join(project_dir, project_name))
+        move(join(project_dir, '${project_name}'), join(project_dir, project_name))
         for paths in (('scrapy.cfg',),('${project_name}', 'settings.py.tmpl'),):
             path = join(*paths)
             tplfile = join(project_dir,
