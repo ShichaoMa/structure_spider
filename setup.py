@@ -5,7 +5,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '1.2.6'
+VERSION = '1.2.8'
 
 AUTHOR = "cn"
 
@@ -44,7 +44,8 @@ setup(
             'feed = structor:feed',
             'check = structor:check',
             'startproject = structor:start_project',
-            'createspider = structor:create_spider'
+            'createspider = structor:create_spider',
+            "structure-spider = structor:run"
         ],
     },
     keywords=KEYWORDS,

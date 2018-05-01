@@ -2,8 +2,9 @@
 from .spider_feeder import SpiderFeeder
 from .check_status import main
 from .start_project import start as start_project, create as create_spider
+from .builder import run
 
-VERSION = '1.2.6'
+VERSION = '1.2.8'
 
 AUTHOR = "cn"
 

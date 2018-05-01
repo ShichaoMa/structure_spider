@@ -4,9 +4,11 @@ import copy
 import json
 import logging
 
-from collections import defaultdict
 from functools import wraps
+from collections import defaultdict
+from argparse import Action, _SubParsersAction
 from urllib.parse import urlparse, urlunparse, urlencode
+
 from toolkit import strip
 from toolkit.logger import Logger
 
@@ -360,6 +362,36 @@ def _repl_wrapper(path, page_num):
         else:
             return path + sub_path
     return _repl
+
+
+class ArgparseHelper(Action):
+    """
+        显示格式友好的帮助信息
+    """
+
+    def __init__(self,
+                 option_strings,
+                 dest="",
+                 default="",
+                 help=None):
+        super(ArgparseHelper, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.print_help()
+        subparsers_actions = [
+            action for action in parser._actions
+            if isinstance(action, _SubParsersAction)]
+        for subparsers_action in subparsers_actions:
+            for choice, subparser in subparsers_action.choices.items():
+                print("Command '{}'".format(choice))
+                print(subparser.format_usage())
+
+        parser.exit()
 
 
 if __name__ == "__main__":

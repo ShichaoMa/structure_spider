@@ -72,13 +72,13 @@ HEADERS = {
 }
 
 # 需要改
-BOT_NAME = '$project_name'
+BOT_NAME = '{{project_name}}'
 
 # 需要改
-SPIDER_MODULES = ['$project_name.spiders']
+SPIDER_MODULES = ['{{project_name}}.spiders']
 
 # 需要改
-NEWSPIDER_MODULE = '$project_name.spiders'
+NEWSPIDER_MODULE = '{{project_name}}.spiders'
 
 # Enables scheduling storing requests queue in redis.
 SCHEDULER = "structor.scheduler.Scheduler"
