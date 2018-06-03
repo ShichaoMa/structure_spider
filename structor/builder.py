@@ -46,6 +46,7 @@ class Command(object):
         for file in glob.glob(join(copy_path, "*")):
             if file.count("__pycache__"):
                 continue
+
             if isdir(file):
                 dir_name = join(src_path, string.Template(
                     basename(file)).substitute(project_name=self.args.name))
@@ -83,6 +84,7 @@ class Command(object):
             print("spider name cannot start with number!")
             exit(1)
         class_name = "".join(word.capitalize() for word in words)
+        file_name = "_".join(word.lower() for word in words)
 
         current_dir = getcwd()
         entities = ["spider", "item"]
@@ -103,7 +105,7 @@ class Command(object):
                 print("Error dir! ")
                 exit(1)
             with open("%ss/%s_%s.py" % (
-                    entity, class_name.lower(), entity), "w") as f:
+                    entity, file_name, entity), "w") as f:
                 template = env.get_template(join("spider", entity + ".py.tmpl"))
                 f.write(
                     template.render(class_name=class_name,
