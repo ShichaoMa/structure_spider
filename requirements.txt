@@ -1,5 +1,5 @@
-scrapy
 toolkity
-jinja2
 custom-redis>=3.1.2
 parsel
+scrapy>=1.7.0
+jinja2

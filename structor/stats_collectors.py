@@ -3,7 +3,7 @@ import time
 
 from scrapy.statscollectors import MemoryStatsCollector
 
-from toolkit.managers import ExceptContext
+from toolkit.tools.managers import ExceptContext
 
 
 class StatsCollector(MemoryStatsCollector):

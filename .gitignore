@@ -1,3 +1,6 @@
 *.pyc
 logs
 *settings.py
+*.eggs
+.idea
+*egg-info/

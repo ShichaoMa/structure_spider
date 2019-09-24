@@ -15,7 +15,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.response import response_status_message
 
 from toolkit import cache_prop
-from toolkit.managers import ExceptContext
+from toolkit.tools.managers import ExceptContext
 
 from ..custom_request import Request
 from ..utils import CustomLogger, enrich_wrapper, \

@@ -39,6 +39,7 @@ class Command(object):
                   port=self.args.redis_port, custom=self.args.custom)
 
     def create(self):
+        self.args.name = self.args.name[0]
         env = Environment(loader=FileSystemLoader(self.templates_path))
         getattr(self, "create_{}".format(self.args.type))(env)
 
@@ -153,7 +154,7 @@ class Command(object):
     def parse_args(self):
         base_parser = ArgumentParser(add_help=False)
         base_parser.add_argument("-t", "--templates", help="templates dir. ")
-        base_parser.add_argument("-n", "--name", required=True, help="name. ")
+        base_parser.add_argument("name", nargs=1, help="name. ")
 
         parser = ArgumentParser(
             description="Structure spider controller. ", add_help=False)

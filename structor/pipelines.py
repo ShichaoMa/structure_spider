@@ -27,7 +27,7 @@ class BasePipeline(object):
 class FilePipeline(BasePipeline):
 
     def process_item(self, item, spider):
-        open("test.json", "w").write(json.dumps(item, cls=ItemEncoder))
+        open("tests.json", "w").write(json.dumps(item, cls=ItemEncoder))
         return item
 
 
