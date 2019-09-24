@@ -3,4 +3,5 @@ logs
 *settings.py
 *.eggs
 .idea
+dist/
 *egg-info/
