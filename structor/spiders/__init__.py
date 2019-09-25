@@ -76,6 +76,10 @@ class StructureSpider(Spider):
         :return: 返回下一页链接或相关请求属性元组，如(url, callback, method...)
         """
         xpath = "|".join(self.page_pattern)
+
+        if xpath == "":
+            return []
+
         page_url = self.page_url(response)
         if len(effective_urls):
             if xpath.count("?") == 1:
