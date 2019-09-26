@@ -1,3 +1,4 @@
+import time
 import random
 import base64
 import traceback
@@ -30,6 +31,20 @@ class DownloaderBaseMiddleware(object):
         cls.crawler = crawler
         obj = cls(crawler.settings)
         return obj
+
+
+class SpeedLimitedMiddleware(DownloaderBaseMiddleware):
+
+    def __init__(self, settings):
+        super().__init__(settings)
+        self.request_interval = 60 / self.settings.getint("SPEED", 60)
+        self.last_acs_time = time.time()
+
+    def process_request(self, request, spider):
+        if time.time() - self.request_interval < self.last_acs_time:
+            time.sleep(self.last_acs_time - time.time() + self.request_interval)
+
+        self.last_acs_time = time.time()
 
 
 class ProxyMiddleware(DownloaderBaseMiddleware):

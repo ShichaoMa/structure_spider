@@ -19,8 +19,6 @@ class Scheduler(object):
                                 self.settings.getint("REDIS_PORT"))
         self.queue_name = None
         self.queues = {}
-        self.request_interval = 60/self.settings.getint("SPEED", 60)
-        self.last_acs_time = time.time()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -49,8 +47,6 @@ class Scheduler(object):
             "length of queue %s is %s" % (
                 self.queue_name, self.redis_conn.zcard(self.queue_name)))
         item = None
-        if time.time() - self.request_interval < self.last_acs_time:
-            return item
 
         if self.settings.getbool("CUSTOM_REDIS"):
             item = self.redis_conn.zpop(self.queue_name)
@@ -64,7 +60,6 @@ class Scheduler(object):
                 item = result[0]
 
         if item:
-            self.last_acs_time = time.time()
             request = pickle.loads(item)
             request.callback = request.callback and getattr(
                 self.spider, request.callback)
