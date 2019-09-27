@@ -1,16 +1,22 @@
 # -*- coding:utf-8 -*-
+import os
 import re
+import sys
 import copy
 import json
 import logging
+import datetime
 
 from functools import wraps
+from logging import handlers
 from collections import defaultdict
+from threading import current_thread
 from argparse import Action, _SubParsersAction
+from pythonjsonlogger.jsonlogger import JsonFormatter
 from urllib.parse import urlparse, urlunparse, urlencode
 
 from toolkit import strip
-from toolkit.logger import Logger
+from toolkit.singleton import Singleton
 
 from scrapy import Selector, Item
 from scrapy.loader import ItemLoader
@@ -241,14 +247,11 @@ class ItemCollector(object):
                     meta=meta, callback="parse_next", errback="errback", **kw)
 
 
-class CustomLogger(Logger):
+class Logger(object, metaclass=Singleton):
     """
     logger的实现
     """
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(crawler.settings, crawler.spidercls.name)
+    format_string = '%(asctime)s [%(name)s:%(threadname)s]%(level)s: %(message)s'
 
     def __init__(self, settings, name):
         self.json = settings.getbool('SC_LOG_JSON', True)
@@ -257,13 +260,61 @@ class CustomLogger(Logger):
         self.dir = settings.get('SC_LOG_DIR', 'logs')
         self.bytes = settings.get('SC_LOG_MAX_BYTES', '10MB')
         self.backups = settings.getint('SC_LOG_BACKUPS', 5)
-        self.udp_host = settings.get("SC_LOG_UDP_HOST", "127.0.0.1")
-        self.udp_port = settings.getint("SC_LOG_UDP_PORT", 5230)
-        self.log_file = settings.getbool('SC_LOG_FILE', False)
         self.name = name
         self.logger = logging.getLogger(name)
         self.logger.propagate = False
         self.set_up()
+
+    def set_up(self):
+        root = logging.getLogger()
+        # 将的所有使用Logger模块生成的logger设置一样的logger level
+        for log in root.manager.loggerDict.keys():
+            root.getChild(log).setLevel(getattr(logging, self.level, 10))
+
+        if self.stdout:
+            self.set_handler(logging.StreamHandler(sys.stdout))
+        else:
+            os.makedirs(self.dir, exist_ok=True)
+            file_handler = handlers.RotatingFileHandler(
+                os.path.join(self.dir, "%s.log" % self.name),
+                maxBytes=self.bytes,
+                backupCount=self.backups)
+            self.set_handler(file_handler)
+
+    def set_handler(self, handler):
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(self._get_formatter())
+        self.logger.addHandler(handler)
+        self.debug("Logging to %s" % handler.__class__.__name__)
+
+    def __getattr__(self, item):
+        if item.upper() in logging._nameToLevel:
+            func = getattr(self.logger, item)
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                extra = kwargs.pop("extra", {})
+                extra.setdefault("level", item)
+                extra.setdefault("timestamp",
+                                 datetime.datetime.utcnow().strftime(
+                                     '%Y-%m-%dT%H:%M:%S.%fZ'))
+                extra.setdefault("logger", self.name)
+                extra.setdefault("threadname", current_thread().getName())
+                kwargs["extra"] = extra
+                return func(*args, **kwargs)
+            return wrapper
+
+        raise AttributeError
+
+    def _get_formatter(self):
+        if self.json:
+            return JsonFormatter()
+        else:
+            return logging.Formatter(self.format_string)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings, crawler.spidercls.name)
 
 
 def url_arg_increment(arg_pattern, url):

@@ -60,9 +60,6 @@ SC_LOG_DIR = os.environ.get('SC_LOG_DIR', "logs")
 SC_LOG_STDOUT = eval(os.environ.get('SC_LOG_STDOUT', "True"))
 SC_LOG_MAX_BYTES = os.environ.get('SC_LOG_MAX_BYTES', 10*1024*1024)
 SC_LOG_BACKUPS = int(os.environ.get('SC_LOG_BACKUPS', 5))
-SC_LOG_UDP_HOST = os.environ.get('SC_LOG_UDP_HOST', '192.168.200.132')
-SC_LOG_UDP_PORT = os.environ.get('SC_LOG_UDP_PORT', 5230)
-SC_LOG_FILE = eval(os.environ.get('SC_LOG_FILE', "False"))
 
 # 有些网站可能需要提供一些自定义的请求头
 HEADERS = {

@@ -5,13 +5,13 @@ from urllib.parse import unquote
 from scrapy.signals import spider_closed
 from toolkit import re_search
 
-from .utils import ItemEncoder, CustomLogger
+from .utils import ItemEncoder, Logger
 
 
 class BasePipeline(object):
 
     def __init__(self, settings):
-        self.logger = CustomLogger.from_crawler(self.crawler)
+        self.logger = Logger.from_crawler(self.crawler)
 
     @classmethod
     def from_crawler(cls, crawler):

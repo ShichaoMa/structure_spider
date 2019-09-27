@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3830d753880a940e9d8e63252f7d0e503fecd05a99dd9e7bbdf38e33d6ad1d81"
+            "sha256": "345b0e68e0bcf09d576245d8e90af15f5eb81d80fd1c3fa00e9d2ab968c18bef"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -136,10 +136,10 @@
         },
         "custom-redis": {
             "hashes": [
-                "sha256:45d7c5578c6167352bf82ae48a04da42ab6aac211fb62c696cd46a1f4f88ffc7"
+                "sha256:13f630f2bc96d12774d35e4ef589d0e1b9ff5ac7346670e56467669f870d739e"
             ],
             "index": "pypi",
-            "version": "==3.1.5"
+            "version": "==3.2.2"
         },
         "decorator": {
             "hashes": [
@@ -393,10 +393,10 @@
         },
         "redis": {
             "hashes": [
-                "sha256:98a22fb750c9b9bb46e75e945dc3f61d0ab30d06117cbb21ff9cd1d315fedd3b",
-                "sha256:c504251769031b0dd7dd5cf786050a6050197c6de0d37778c80c08cb04ae8275"
+                "sha256:af9747ec2727425b1b09252975e21502ee5a3d8d235c7f49869eb13e09ccf4e4"
             ],
-            "version": "==3.3.8"
+            "index": "pypi",
+            "version": "==2.9.1"
         },
         "requests": {
             "hashes": [
@@ -429,10 +429,10 @@
         },
         "toolkity": {
             "hashes": [
-                "sha256:3c7f3d4680022ab8f28842c22eaf482ad7ec1e20a4bb903352cbc8497c8bdf62"
+                "sha256:9752aaec7610aaef7d6e9b5ab779de9d6dba9603b8a71a9fa6a71adff92aa4bf"
             ],
             "index": "pypi",
-            "version": "==1.8.0"
+            "version": "==1.9.0"
         },
         "traitlets": {
             "hashes": [
@@ -468,10 +468,10 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:2f3eadfea5d92bc7899e75b5968410b749a054b492d5a6379c1344a1481bc2cb",
-                "sha256:9c6c593cb28f52075016307fc26b0a0f8e82bc7d1ff19aaaa959b91710a56c47"
+                "sha256:3de946ffbed6e6746608990594d08faac602528ac7015ac28d33cee6a45b7398",
+                "sha256:9a107b99a5393caf59c7aa3c1249c16e6879447533d0887f4336dde834c7be86"
             ],
-            "version": "==1.25.5"
+            "version": "==1.25.6"
         },
         "w3lib": {
             "hashes": [

@@ -18,7 +18,7 @@ from toolkit import cache_prop
 from toolkit.tools.managers import ExceptContext
 
 from ..custom_request import Request
-from ..utils import CustomLogger, enrich_wrapper, \
+from ..utils import Logger, enrich_wrapper, \
     url_arg_increment, url_item_arg_increment, url_path_arg_increment
 from ..item_collector import ItemCollector, Node
 
@@ -41,7 +41,7 @@ class StructureSpider(Spider):
 
     @cache_prop
     def logger(self):
-        return CustomLogger.from_crawler(self.crawler)
+        return Logger.from_crawler(self.crawler)
 
     def log_err(self, func_name, *args):
         self.logger.error(

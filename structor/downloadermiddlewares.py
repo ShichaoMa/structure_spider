@@ -17,13 +17,13 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
 
 from toolkit import parse_cookie
 
-from .utils import CustomLogger
+from .utils import Logger
 from .custom_cookie_jar import CookieJar
 
 
 class DownloaderBaseMiddleware(object):
     def __init__(self, settings):
-        self.logger = CustomLogger.from_crawler(self.crawler)
+        self.logger = Logger.from_crawler(self.crawler)
         self.settings = settings
 
     @classmethod

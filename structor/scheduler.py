@@ -2,7 +2,7 @@
 import time
 import pickle
 
-from .utils import CustomLogger
+from .utils import Logger
 
 
 class Scheduler(object):
@@ -10,7 +10,7 @@ class Scheduler(object):
 
     def __init__(self, crawler):
         self.settings = crawler.settings
-        self.logger = CustomLogger.from_crawler(crawler)
+        self.logger = Logger.from_crawler(crawler)
         if self.settings.getbool("CUSTOM_REDIS"):
             from custom_redis.client import Redis
         else:
