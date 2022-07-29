@@ -10,7 +10,7 @@ toolkity = "~=1.9.0"
 redis = "~=2.9.0"
 custom-redis = "~=3.2.0"
 parsel = "*"
-Scrapy = "~=1.7.0"
+Scrapy = "~=2.6.2"
 Jinja2 = "*"
 
 [requires]
